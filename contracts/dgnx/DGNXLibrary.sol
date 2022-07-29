@@ -5,8 +5,6 @@ import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
-// import 'hardhat/console.sol';
-
 library DGNXLibrary {
     using SafeMath for uint256;
 

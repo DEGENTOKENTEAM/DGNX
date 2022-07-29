@@ -8,8 +8,6 @@ import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
 
-import 'hardhat/console.sol';
-
 contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
     using SafeERC20 for ERC20;
     using Address for address;

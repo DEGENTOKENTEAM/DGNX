@@ -14,8 +14,6 @@ import '@openzeppelin/contracts/utils/Address.sol';
 
 import './DGNXLibrary.sol';
 
-// import 'hardhat/console.sol';
-
 contract DGNXController is ReentrancyGuard, Ownable {
     using SafeERC20 for ERC20;
     using Address for address;
@@ -50,7 +48,7 @@ contract DGNXController is ReentrancyGuard, Ownable {
     uint256 public investmentFundThreshold = 1000 * 10**18;
 
     // Some basic stuff we need
-    address public constant DEV = 0x1F23DC4dbD0aa957265243E94e131c414ebcaa11;
+    address public constant DEV = 0xdF090f6675034Fde637031c6590FD1bBeBc4fa45;
     address public constant DEAD = 0x000000000000000000000000000000000000dEaD;
     address public constant MARKETING =
         0x16eF18E42A7d72E52E9B213D7eABA269B90A4643;
