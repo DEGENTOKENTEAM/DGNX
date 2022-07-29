@@ -45,22 +45,9 @@ npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
 
 For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
 
+# Static Code Analysis
 
-## TODOs
-
-[D.U.M.P. Contract](./docs/TODO.md)
-
-
-
-`docker run -it -v $(pwd):/share --workdir="/share/contracts" trailofbits/eth-security-toolbox`
-
-`slither ./dgnx --solc-remaps "@openzeppelin/=/share/node_modules/@openzeppelin/ @uniswap/=/share/node_modules/@uniswap/"`
-
-
-Multisig 
-0xDEb3c8f2e25f80bd12a652764f31476a827C7E1F
-0xcb5927D543a06FaBfF6cDB7E3F29205CC7A9144d
-0x4F7B1825D3ecb6EcB8904780fcd1EBDd948C8dB2
-0xf013574Bbc5f3f578B7b7eC79F30Cd8C283d8Fd7
-0x2B76c4931F7aB8a1b4b45E4440B5852eF15ABf10
-0x2b79738c27186E52dBEF6C491852f065ee136C33
+```
+  docker run -it -v $(pwd):/share --workdir="/share/contracts" trailofbits/eth-security-toolbox
+  slither ./dgnx --solc-remaps "@openzeppelin/=/share/node_modules/@openzeppelin/ @uniswap/=/share/node_modules/@uniswap/"
+``` 
