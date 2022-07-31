@@ -404,6 +404,14 @@ contract DGNXPrivateSaleNFT is
         delete whitelistType[_addr];
     }
 
+    function isWhitelistedForType(address _addr, TicketType _type)
+        external
+        view
+        returns (bool)
+    {
+        return whitelist[_addr] && whitelistType[_addr] == _type;
+    }
+
     function isWhitelisted(address _addr) external view returns (bool) {
         return whitelist[_addr];
     }

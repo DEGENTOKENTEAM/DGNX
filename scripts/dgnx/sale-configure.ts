@@ -9,7 +9,7 @@ import { tokens } from "../../test/helpers";
 dotenv.config();
 
 const tokenAddress = "0x48C76F01C2D0C2e613f05aaAED45ce91d92873f0";
-const saleAddress = "0x3D9F458c92Dc77F5aC95A13a0519baA175F60584";
+const saleAddress = "0x9f692B35753Db22341b3467B159DeCcd802ec552";
 
 async function main() {
   const [deployer] = await ethers.getSigners();

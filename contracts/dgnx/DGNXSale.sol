@@ -15,8 +15,10 @@ contract DGNXSale is ReentrancyGuard, Ownable, Pausable {
     address public dgnx;
     address public locker;
     address public nfts;
+    bool public claimActive = false;
 
     mapping(address => uint256) public privateSaleLimits;
+    mapping(address => uint256) public bought;
     mapping(address => bool) public participant;
 
     constructor(
@@ -36,6 +38,13 @@ contract DGNXSale is ReentrancyGuard, Ownable, Pausable {
 
     event PayEntranceFee(address sender, uint256 tokenId, uint256 blockNumber);
     event AllocateForSale(address sender, uint256 amount, uint256 blockNumber);
+    event Claim(address sender, uint256 amount, uint256 blockNumber);
+    event Bought(
+        address sender,
+        uint256 amount,
+        uint256 amountTotal,
+        uint256 blockNumber
+    );
 
     function finishSale() external onlyOwner {
         _pause();
@@ -115,10 +124,44 @@ contract DGNXSale is ReentrancyGuard, Ownable, Pausable {
             if (valueReturn > 0 && valueReturn <= address(this).balance) {
                 payable(_msgSender()).transfer(valueReturn);
             }
-            require(
-                ERC20(dgnx).transfer(_msgSender(), payoutTokens),
-                'tx failed'
+            bought[_msgSender()] += payoutTokens;
+            emit Bought(
+                _msgSender(),
+                payoutTokens,
+                bought[_msgSender()],
+                block.number
             );
         }
+    }
+
+    /**
+     * This method is used to claim previously allocated tokens through buying and participating in the private sale
+     * To work properly the claming needs to be active and the sender should have bought at least 1 asset
+     * the contract should be paused that this function is working
+     */
+    function claim() external whenPaused nonReentrant {
+        require(claimActive, 'DGNXSale::claim claming not active yet');
+        require(bought[_msgSender()] > 0, 'DGNXSale::claim no funds to claim');
+        uint256 amount = bought[_msgSender()];
+        delete bought[_msgSender()];
+        require(
+            ERC20(dgnx).transfer(_msgSender(), amount),
+            'DGNXSale::claim tx failed'
+        );
+        emit Claim(_msgSender(), amount, block.number);
+    }
+
+    /**
+     * Starts the claiming process
+     */
+    function startClaim() external onlyOwner {
+        claimActive = true;
+    }
+
+    /**
+     * Stops the claiming process
+     */
+    function stopClaim() external onlyOwner {
+        claimActive = false;
     }
 }

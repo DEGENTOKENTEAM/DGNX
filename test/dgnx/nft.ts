@@ -51,7 +51,7 @@ describe("DGNXPrivateSaleNFT", () => {
       const balanceAfter: BigNumber = await deployer.getBalance();
 
       expect(balanceAfter.sub(balanceBefore)).to.eq(
-        ethers.BigNumber.from("1993136825000000000")
+        ethers.BigNumber.from("1993156625000000000")
       );
     });
   });
@@ -100,6 +100,27 @@ describe("DGNXPrivateSaleNFT", () => {
       ).wait();
       expect(await nftContract.connect(admin).isWhitelisted(addr1.address)).to
         .be.false;
+    });
+
+    it("checks if address has a specific type on whitelist", async () => {
+      await (
+        await nftContract.connect(deployer).addWhitelistAdmin(admin.address)
+      ).wait();
+      await (
+        await nftContract
+          .connect(admin)
+          .addToWhitelist(addr1.address, TicketTypes.GOLD)
+      ).wait();
+      await (
+        await nftContract
+          .connect(admin)
+          .addToWhitelist(addr2.address, TicketTypes.BRONZE)
+      ).wait();
+
+      expect(await nftContract.isWhitelistedForType(addr1.address, 2)).to.be
+        .true;
+      expect(await nftContract.isWhitelistedForType(addr2.address, 0)).to.be
+        .true;
     });
 
     it("can start Gold NFT mint", async () => {

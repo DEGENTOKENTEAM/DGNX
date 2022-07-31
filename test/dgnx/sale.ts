@@ -108,7 +108,7 @@ describe("Sale", () => {
       ).to.eq(ethers.utils.parseEther("0"));
 
       expect(await deployer.getBalance()).to.be.gte(
-        ethers.BigNumber.from("10008388500000000000000")
+        ethers.BigNumber.from("10008270187400000000000")
       );
     });
 
@@ -145,7 +145,7 @@ describe("Sale", () => {
     });
 
     it("should be able to pay the entrance fee with gold nft", async () => {
-      await (await nftContract.connect(deployer).airdropMint(addr1.address, 0)).wait(); // prettier-ignore
+      await (await nftContract.connect(deployer).airdropMint(addr1.address, 2)).wait(); // prettier-ignore
       await (await nftContract.connect(addr1).approve(saleContract.address, 1)).wait(); // prettier-ignore
       await (await saleContract.connect(addr1).payEntranceFee(1)).wait();
       expect(await saleContract.privateSaleLimits(addr1.address)).to.eq(tokens(55)); // prettier-ignore
@@ -159,7 +159,7 @@ describe("Sale", () => {
     });
 
     it("should be able to pay the entrance fee with bronze nft", async () => {
-      await (await nftContract.connect(deployer).airdropMint(addr1.address, 2)).wait(); // prettier-ignore
+      await (await nftContract.connect(deployer).airdropMint(addr1.address, 0)).wait(); // prettier-ignore
       await (await nftContract.connect(addr1).approve(saleContract.address, 1)).wait(); // prettier-ignore
       await (await saleContract.connect(addr1).payEntranceFee(1)).wait();
       expect(await saleContract.privateSaleLimits(addr1.address)).to.eq(tokens(10)); // prettier-ignore
@@ -194,7 +194,7 @@ describe("Sale", () => {
         await saleContract.connect(deployer).allocateForSale(tokens(70000))
       ).wait();
       await (
-        await nftContract.connect(deployer).airdropMint(addr1.address, 0)
+        await nftContract.connect(deployer).airdropMint(addr1.address, 2)
       ).wait();
       await (
         await nftContract.connect(addr1).approve(saleContract.address, 1)
@@ -248,14 +248,14 @@ describe("Sale", () => {
         await saleContract.connect(deployer).allocateForSale(tokens(1000000))
       ).wait();
       await (
-        await nftContract.connect(deployer).airdropMint(addr1.address, 0)
+        await nftContract.connect(deployer).airdropMint(addr1.address, 2)
       ).wait();
       await (
         await nftContract.connect(addr1).approve(saleContract.address, 1)
       ).wait();
       await (await saleContract.connect(addr1).payEntranceFee(1)).wait();
       expect(await addr1.getBalance()).to.eq(
-        ethers.BigNumber.from("9999966015325000000000")
+        ethers.BigNumber.from("9999961997275000000000")
       );
       await (
         await saleContract.connect(addr1).buy({
@@ -263,7 +263,7 @@ describe("Sale", () => {
         })
       ).wait();
       expect(await addr1.getBalance()).to.eq(
-        ethers.BigNumber.from("9944945537175000000000")
+        ethers.BigNumber.from("9944947680300000000000")
       );
     });
 
@@ -300,27 +300,27 @@ describe("Sale", () => {
       await (await saleContract.connect(addr3).payEntranceFee(3)).wait();
       await (
         await saleContract.connect(addr1).buy({
-          value: ethers.utils.parseEther("55"),
+          value: ethers.utils.parseEther("100"),
         })
       ).wait();
       await (
         await saleContract.connect(addr2).buy({
-          value: ethers.utils.parseEther("20"),
+          value: ethers.utils.parseEther("100"),
         })
       ).wait();
       await (
         await saleContract.connect(addr3).buy({
-          value: ethers.utils.parseEther("10"),
+          value: ethers.utils.parseEther("100"),
         })
       ).wait();
-      expect(await token.balanceOf(addr1.address)).to.eq(
-        ethers.BigNumber.from("73333333333333333333333")
+      expect(await saleContract.bought(addr1.address)).to.eq(
+        ethers.BigNumber.from("13333333333333333333333")
       );
-      expect(await token.balanceOf(addr2.address)).to.eq(
+      expect(await saleContract.bought(addr2.address)).to.eq(
         ethers.BigNumber.from("26666666666666666666666")
       );
-      expect(await token.balanceOf(addr3.address)).to.eq(
-        ethers.BigNumber.from("13333333333333333333333")
+      expect(await saleContract.bought(addr3.address)).to.eq(
+        ethers.BigNumber.from("73333333333333333333333")
       );
     });
 
@@ -342,6 +342,92 @@ describe("Sale", () => {
       ).wait();
       await (await saleContract.connect(addr1).payEntranceFee(1)).wait();
       expect(await saleContract.participant(addr1.address)).to.be.true;
+    });
+  });
+
+  describe("Claiming", () => {
+    it("should be allow future holder to claim its allocated assets", async () => {
+      await (await saleContract.connect(deployer).unpause()).wait();
+      await (
+        await token
+          .connect(deployer)
+          .transfer(saleContract.address, tokens(1000000))
+      ).wait();
+      await (
+        await saleContract.connect(deployer).allocateForSale(tokens(1000000))
+      ).wait();
+      await (
+        await nftContract.connect(deployer).airdropMint(addr1.address, 0)
+      ).wait();
+      await (
+        await nftContract.connect(addr1).approve(saleContract.address, 1)
+      ).wait();
+      await (await saleContract.connect(addr1).payEntranceFee(1)).wait();
+      await (
+        await saleContract.connect(addr1).buy({
+          value: ethers.utils.parseEther("10"),
+        })
+      ).wait();
+      await (await saleContract.connect(deployer).pause()).wait();
+      await (await saleContract.connect(deployer).startClaim()).wait();
+      await (await saleContract.connect(addr1).claim()).wait();
+      expect(await token.balanceOf(addr1.address)).to.eq(
+        ethers.BigNumber.from("13333333333333333333333")
+      );
+    });
+    it("should fail when sale is in progress", async () => {
+      await (await saleContract.connect(deployer).unpause()).wait();
+      await expect(saleContract.claim()).to.be.revertedWith(
+        "Pausable: not paused"
+      );
+    });
+    it("should fail when claiming is not active yet", async () => {
+      await expect(saleContract.connect(addr1).claim()).to.be.revertedWith(
+        "DGNXSale::claim claming not active yet"
+      );
+    });
+    it("should fail when sender has not bought at least 1 asset", async () => {
+      await (
+        await token
+          .connect(deployer)
+          .transfer(saleContract.address, tokens(1000000))
+      ).wait();
+      await (
+        await saleContract.connect(deployer).allocateForSale(tokens(1000000))
+      ).wait();
+      await (await saleContract.connect(deployer).startClaim()).wait();
+      await expect(saleContract.connect(addr1).claim()).to.be.revertedWith(
+        "DGNXSale::claim no funds to claim"
+      );
+    });
+    it("should fail when sender tries to claim multiple times", async () => {
+      await (await saleContract.connect(deployer).unpause()).wait();
+      await (
+        await token
+          .connect(deployer)
+          .transfer(saleContract.address, tokens(1000000))
+      ).wait();
+      await (
+        await saleContract.connect(deployer).allocateForSale(tokens(1000000))
+      ).wait();
+      await (
+        await nftContract.connect(deployer).airdropMint(addr1.address, 0)
+      ).wait();
+      await (
+        await nftContract.connect(addr1).approve(saleContract.address, 1)
+      ).wait();
+      await (await saleContract.connect(addr1).payEntranceFee(1)).wait();
+      await (
+        await saleContract.connect(addr1).buy({
+          value: ethers.utils.parseEther("10"),
+        })
+      ).wait();
+      await (await saleContract.connect(deployer).pause()).wait();
+      await (await saleContract.connect(deployer).startClaim()).wait();
+      await (await saleContract.connect(addr1).claim()).wait();
+      await expect(saleContract.connect(addr1).claim()).to.be.revertedWith(
+        "DGNXSale::claim no funds to claim"
+      );
     });
   });
 });

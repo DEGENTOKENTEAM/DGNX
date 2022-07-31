@@ -17,17 +17,19 @@ describe("Legacy Disburser", () => {
   const prepareAddresses = async () => {
     const addr1Balance = ethers.BigNumber.from("100000000000000000000000");
     const addr2Balance = ethers.BigNumber.from("200000000000000000000000");
+    const addr3Balance = ethers.BigNumber.from("150000000000000000000000");
     await (
       await disburser
         .connect(owner)
         .addAddresses(
-          [addr1.address, addr2.address],
-          [addr1Balance, addr2Balance]
+          [addr1.address, addr2.address, addr3.address],
+          [addr1Balance, addr2Balance, addr3Balance]
         )
     ).wait();
 
     expect(await disburser.amountLeft(addr1.address)).to.eq(addr1Balance);
     expect(await disburser.amountLeft(addr2.address)).to.eq(addr2Balance);
+    expect(await disburser.amountLeft(addr3.address)).to.eq(addr3Balance);
   };
 
   beforeEach(async () => {
@@ -54,7 +56,7 @@ describe("Legacy Disburser", () => {
 
     disburser = await (
       await ethers.getContractFactory("DGNXLegacyDisburser")
-    ).deploy(token.address, locker.address, 60, 10, 5);
+    ).deploy(token.address, locker.address, 60, 180, 10, 5);
     await disburser.deployed();
   });
 
@@ -95,6 +97,24 @@ describe("Legacy Disburser", () => {
     it("check if has not started claming yet", async () => {
       await prepareAddresses();
       expect(await disburser.hasStartedClaiming(addr1.address)).to.be.false;
+    });
+
+    it("respond metrics", async () => {
+      await (
+        await token.connect(owner).transfer(disburser.address, tokens(10000000))
+      ).wait();
+      await prepareAddresses();
+      await (await disburser.connect(addr1).claimStart()).wait();
+      await (await disburser.connect(addr2).claimStart()).wait();
+      const data = await disburser.data();
+      expect(data.claimableAmount).to.eq(
+        ethers.BigNumber.from("450000000000000000000000")
+      );
+      expect(data.paidOutAmount).to.eq(
+        ethers.BigNumber.from("30000000000000000000000")
+      );
+      expect(data.totalPayouts).to.eq(ethers.BigNumber.from("0"));
+      expect(data.recentClaim).to.eq(ethers.BigNumber.from("1657362280"));
     });
   });
 
@@ -250,7 +270,7 @@ describe("Legacy Disburser", () => {
         ethers.BigNumber.from("32250999437136998254359")
       );
       expect(lockerAmount).to.eq(
-        ethers.BigNumber.from("100000000000000000000000").sub(payedOutAmount)
+        ethers.BigNumber.from("417749000562863001745641")
       );
     });
 
@@ -264,7 +284,46 @@ describe("Legacy Disburser", () => {
         ethers.BigNumber.from("32250999437136998254359")
       );
       expect(lockerAmount).to.eq(
-        ethers.BigNumber.from("100000000000000000000000").sub(payedOutAmount)
+        ethers.BigNumber.from("267749000562863001745641")
+      );
+    });
+
+    it("should remove one tardy holder when the limit of time is reached", async () => {
+      await prepareAddresses();
+      await (await disburser.connect(addr1).claimStart()).wait();
+      expect(await disburser.amountLeft(addr2.address)).to.eq(
+        ethers.BigNumber.from("200000000000000000000000")
+      );
+      expect(await disburser.amountLeft(addr3.address)).to.eq(
+        ethers.BigNumber.from("150000000000000000000000")
+      );
+      await network.provider.send("hardhat_mine", ["0x2", "0xB5"]);
+      await (await disburser.connect(addr1).claim()).wait();
+      expect(await disburser.amountLeft(addr2.address)).to.eq(
+        ethers.BigNumber.from("0")
+      );
+      expect(await disburser.amountLeft(addr3.address)).to.eq(
+        ethers.BigNumber.from("150000000000000000000000")
+      );
+      await network.provider.send("hardhat_mine", ["0x2", "0xB5"]);
+      await (await disburser.connect(addr1).claim()).wait();
+      expect(await disburser.amountLeft(addr2.address)).to.eq(
+        ethers.BigNumber.from("0")
+      );
+      expect(await disburser.amountLeft(addr3.address)).to.eq(
+        ethers.BigNumber.from("0")
+      );
+      expect(await token.balanceOf(locker.address)).to.eq(
+        ethers.BigNumber.from("350000000000000000000000")
+      );
+    });
+
+    it("should not be able to start claming when 3 intervals are over", async () => {
+      await prepareAddresses();
+      await (await disburser.connect(addr1).claimStart()).wait();
+      await network.provider.send("hardhat_mine", ["0x2", "0xB5"]);
+      await expect(disburser.connect(addr2).claimStart()).to.be.revertedWith(
+        "DGNXLegacyDisburser::claimStart first claming period is over"
       );
     });
   });

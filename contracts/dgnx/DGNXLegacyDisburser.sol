@@ -18,7 +18,9 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
 
     bool public _start = false;
 
-    uint256 public timeInterval;
+    uint256 public timeInterval; // in seconds
+    uint256 public timeStarted; // in seconds
+    uint256 public timeIntervalTardyHolder = 7776000; // 90 days in seconds
     uint256 public ppInitial; // percentage points initial payout
     uint256 public ppRecurring; // percentage points recurring payouts
 
@@ -27,13 +29,22 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
     mapping(address => uint256) private payouts;
     mapping(address => uint256) public lastPayoutTimestamp;
 
+    address[] private legacyAmountAddresses;
+
     event StartClaim(uint256 timestamp, address sender, uint256 amount);
     event Claim(uint256 timestamp, address sender, uint256 amount);
+    event RemovedTardyHolder(
+        uint256 timestamp,
+        address sender,
+        address tardyHolder,
+        uint256 amount
+    );
 
     constructor(
         address _token,
         address _locker,
         uint256 _timeInterval,
+        uint256 _timeIntervalTardyHolder,
         uint256 _ppInitial,
         uint256 _ppRecurring
     ) {
@@ -51,7 +62,11 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         );
         require(
             _timeInterval > 0,
-            'DGNXLegacyDisburser::constructor time intervall missing'
+            'DGNXLegacyDisburser::constructor time interval missing'
+        );
+        require(
+            _timeIntervalTardyHolder > 0,
+            'DGNXLegacyDisburser::constructor tardy holder interfal missing'
         );
         require(
             _ppInitial > 0,
@@ -62,11 +77,12 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             'DGNXLegacyDisburser::constructor wrong recurring pp'
         );
 
-        timeInterval = _timeInterval;
-        ppRecurring = _ppRecurring;
-        ppInitial = _ppInitial;
         token = _token;
         locker = _locker;
+        timeInterval = _timeInterval;
+        timeIntervalTardyHolder = _timeIntervalTardyHolder;
+        ppInitial = _ppInitial;
+        ppRecurring = _ppRecurring;
     }
 
     modifier _isStarted() {
@@ -92,6 +108,10 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
 
     function claimStart() external _isStarted _allowedToClaim {
         require(
+            block.timestamp - timeStarted < timeIntervalTardyHolder,
+            'DGNXLegacyDisburser::claimStart first claming period is over'
+        );
+        require(
             paidOutAmounts[_msgSender()] == 0,
             'DGNXLegacyDisburser::claimStart already claimed initial funds'
         );
@@ -103,7 +123,6 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         );
 
         paidOutAmounts[_msgSender()] += initialPayout;
-        // fix this, timestamp must be calculated from start (interval * missed payouts)
         lastPayoutTimestamp[_msgSender()] = block.timestamp;
 
         require(
@@ -122,6 +141,8 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             paidOutAmounts[_msgSender()] > 0,
             'DGNXLegacyDisburser::claimStart missing initial claim'
         );
+
+        removeOneTardyHolder();
 
         (
             uint256 claimable,
@@ -196,6 +217,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         // only once
         require(!_start, 'DGNXLegacyDisburser::start already started');
         _start = true;
+        timeStarted = block.timestamp;
     }
 
     function isStarted() public view returns (bool) {
@@ -232,7 +254,67 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         );
 
         for (uint256 i; i < addresses.length; i++) {
-            legacyAmounts[addresses[i]] = amounts[i];
+            if (legacyAmounts[addresses[i]] == 0) {
+                legacyAmounts[addresses[i]] = amounts[i];
+                legacyAmountAddresses.push(addresses[i]);
+            }
+        }
+    }
+
+    function removeOneTardyHolder() internal {
+        if (
+            block.timestamp - timeStarted > timeIntervalTardyHolder &&
+            legacyAmountAddresses.length > 0
+        ) {
+            address tardyHolder;
+            uint256 tardyHolderIdx;
+            for (
+                uint256 i;
+                i < legacyAmountAddresses.length && tardyHolder == address(0);
+                i++
+            ) {
+                if (paidOutAmounts[legacyAmountAddresses[i]] == 0) {
+                    tardyHolder = legacyAmountAddresses[i];
+                    tardyHolderIdx = i;
+                }
+            }
+            if (tardyHolder != address(0)) {
+                uint256 transferAmount = legacyAmounts[tardyHolder];
+                delete legacyAmounts[tardyHolder];
+                delete paidOutAmounts[tardyHolder];
+                legacyAmountAddresses[tardyHolderIdx] = legacyAmountAddresses[
+                    legacyAmountAddresses.length - 1
+                ];
+                legacyAmountAddresses.pop();
+                ERC20(token).transfer(locker, transferAmount);
+                emit RemovedTardyHolder(
+                    block.timestamp,
+                    _msgSender(),
+                    tardyHolder,
+                    transferAmount
+                );
+            }
+        }
+    }
+
+    function data()
+        external
+        view
+        returns (
+            uint256 claimableAmount,
+            uint256 paidOutAmount,
+            uint256 totalPayouts,
+            uint256 recentClaim
+        )
+    {
+        for (uint256 i; i < legacyAmountAddresses.length; i++) {
+            address addr = legacyAmountAddresses[i];
+            claimableAmount += legacyAmounts[addr];
+            paidOutAmount += paidOutAmounts[addr];
+            totalPayouts += payouts[addr];
+            if (recentClaim < lastPayoutTimestamp[addr]) {
+                recentClaim = lastPayoutTimestamp[addr];
+            }
         }
     }
 }

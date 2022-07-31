@@ -1,5 +1,4 @@
 import { ethers } from "hardhat";
-
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -14,9 +13,9 @@ async function main() {
     "DGNX Private Sale Token",
     "PST",
     "https://dgnx.finance/assets/nfts/private-sale/",
-    3,
-    3,
-    3
+    10,
+    10,
+    10
   );
   await nftContract.deployed();
 
