@@ -493,7 +493,7 @@ contract DGNXPrivateSaleNFT is
         emit StopMinting(_msgSender());
     }
 
-    function hasMintingtarted() external view returns (bool) {
+    function hasMintingStarted() external view returns (bool) {
         return _mintingStarted;
     }
 }

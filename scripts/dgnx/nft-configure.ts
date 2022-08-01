@@ -4,7 +4,7 @@ const abiNft =
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const nftContractAddress = "0xe7037Ff9CA70C66D92EfB7921188471B731126c3";
+const nftContractAddress = "0xA4cC7ff20fBd54Aa6A7666A37859FB395B036C03";
 const walletToType: { wallet: string; type: number }[] = [
   {
     wallet: "0x095D6cBCFb46cd23f0d129376F3dC7fe76aDA359",
