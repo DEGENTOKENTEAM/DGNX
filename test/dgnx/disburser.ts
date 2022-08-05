@@ -114,13 +114,13 @@ describe("Legacy Disburser", () => {
         ethers.BigNumber.from("30000000000000000000000")
       );
       expect(data.totalPayouts).to.eq(ethers.BigNumber.from("0"));
-      expect(data.recentClaim).to.eq(ethers.BigNumber.from("1657362280"));
     });
   });
 
   describe("Claiming", () => {
     let claimable;
     let missedPayouts;
+    let currentBalance;
     let lastClaim;
 
     beforeEach(async () => {
@@ -141,7 +141,7 @@ describe("Legacy Disburser", () => {
 
     it("should fail when claiming without initial amout claimed", async () => {
       await expect(disburser.connect(addr1).claim()).to.be.revertedWith(
-        "DGNXLegacyDisburser::claimStart missing initial claim"
+        "DGNXLegacyDisburser::claim missing initial claim"
       );
     });
 
@@ -161,11 +161,14 @@ describe("Legacy Disburser", () => {
 
     it("should estimate claimable amount after claim start with 0", async () => {
       await (await disburser.connect(addr1).claimStart()).wait();
-      ({ claimable, missedPayouts, lastClaim } = await disburser
+      ({ claimable, missedPayouts, currentBalance, lastClaim } = await disburser
         .connect(addr1)
         .claimEstimate());
       expect(claimable).to.eq(ethers.BigNumber.from("0"));
       expect(missedPayouts).to.eq(ethers.BigNumber.from("0"));
+      expect(currentBalance).to.eq(
+        ethers.BigNumber.from("10000000000000000000000")
+      );
       expect(lastClaim).to.be.false;
     });
 
@@ -175,19 +178,25 @@ describe("Legacy Disburser", () => {
         ethers.BigNumber.from("10000000000000000000000")
       );
 
-      ({ claimable, missedPayouts, lastClaim } = await disburser
+      ({ claimable, missedPayouts, currentBalance, lastClaim } = await disburser
         .connect(addr1)
         .claimEstimate());
       expect(claimable).to.eq(ethers.BigNumber.from("0"));
       expect(missedPayouts).to.eq(ethers.BigNumber.from("0"));
+      expect(currentBalance).to.eq(
+        ethers.BigNumber.from("10000000000000000000000")
+      );
       expect(lastClaim).to.be.false;
 
       await network.provider.send("hardhat_mine", ["0x3C", "0x1"]);
-      ({ claimable, missedPayouts, lastClaim } = await disburser
+      ({ claimable, missedPayouts, currentBalance, lastClaim } = await disburser
         .connect(addr1)
         .claimEstimate());
       expect(claimable).to.eq(ethers.BigNumber.from("500000000000000000000"));
       expect(missedPayouts).to.eq(ethers.BigNumber.from("1"));
+      expect(currentBalance).to.eq(
+        ethers.BigNumber.from("10000000000000000000000")
+      );
       expect(lastClaim).to.be.false;
     });
 
@@ -201,11 +210,14 @@ describe("Legacy Disburser", () => {
     it("should estimate claimable max possible amount by exceeding interval with claming before", async () => {
       await (await disburser.connect(addr1).claimStart()).wait();
       await network.provider.send("hardhat_mine", ["0xB40", "0x1"]);
-      ({ claimable, missedPayouts, lastClaim } = await disburser
+      ({ claimable, missedPayouts, currentBalance, lastClaim } = await disburser
         .connect(addr1)
         .claimEstimate());
       expect(claimable).to.eq(ethers.BigNumber.from("22250999437136998254359"));
       expect(missedPayouts).to.eq(ethers.BigNumber.from("24"));
+      expect(currentBalance).to.eq(
+        ethers.BigNumber.from("10000000000000000000000")
+      );
       expect(lastClaim).to.be.true;
     });
 

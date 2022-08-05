@@ -11,9 +11,19 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
   console.log("Current balance: ", (await deployer.getBalance()).toString());
 
+  const claimInterval = 60 * 60 * 24 * 30; // 30 days
+  const tardyHolderTimeframe = 60 * 60 * 24 * 30 * 3; // 90 days
+
   const disburser = await (
     await ethers.getContractFactory("DGNXLegacyDisburser")
-  ).deploy(tokenAddress, lockerAddress, 60, 10, 5);
+  ).deploy(
+    tokenAddress,
+    lockerAddress,
+    claimInterval,
+    tardyHolderTimeframe,
+    10,
+    5
+  );
   await disburser.deployed();
 
   console.log("DGNXLegacyDisburser deployed to: ", disburser.address);

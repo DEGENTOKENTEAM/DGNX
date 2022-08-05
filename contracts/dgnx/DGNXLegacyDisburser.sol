@@ -20,19 +20,24 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
 
     uint256 public timeInterval; // in seconds
     uint256 public timeStarted; // in seconds
-    uint256 public timeIntervalTardyHolder = 7776000; // 90 days in seconds
+    uint256 public timeIntervalTardyHolder; // in seconds
     uint256 public ppInitial; // percentage points initial payout
     uint256 public ppRecurring; // percentage points recurring payouts
 
-    mapping(address => uint256) private legacyAmounts;
-    mapping(address => uint256) private paidOutAmounts;
-    mapping(address => uint256) private payouts;
+    mapping(address => uint256) public legacyAmounts;
+    mapping(address => uint256) public paidOutAmounts;
+    mapping(address => uint256) public payouts;
     mapping(address => uint256) public lastPayoutTimestamp;
 
     address[] private legacyAmountAddresses;
 
     event StartClaim(uint256 timestamp, address sender, uint256 amount);
-    event Claim(uint256 timestamp, address sender, uint256 amount);
+    event Claim(
+        uint256 timestamp,
+        address sender,
+        uint256 amount,
+        uint256 currentBalance
+    );
     event RemovedTardyHolder(
         uint256 timestamp,
         address sender,
@@ -139,7 +144,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
     function claim() external _isStarted _allowedToClaim {
         require(
             paidOutAmounts[_msgSender()] > 0,
-            'DGNXLegacyDisburser::claimStart missing initial claim'
+            'DGNXLegacyDisburser::claim missing initial claim'
         );
 
         removeOneTardyHolder();
@@ -147,6 +152,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         (
             uint256 claimable,
             uint256 missedPayouts,
+            uint256 currentBalance,
             bool lastClaim
         ) = claimEstimate();
 
@@ -160,6 +166,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             uint256 lockAmount = legacyAmounts[_msgSender()] -
                 paidOutAmounts[_msgSender()];
             if (lockAmount > 0) {
+                delete legacyAmounts[_msgSender()];
                 transferTokensToLocker(lockAmount);
             }
         }
@@ -169,7 +176,12 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             'DGNXLegacyDisburser::claimStart Tx failed'
         );
 
-        emit Claim(lastPayoutTimestamp[_msgSender()], _msgSender(), claimable);
+        emit Claim(
+            lastPayoutTimestamp[_msgSender()],
+            _msgSender(),
+            claimable,
+            currentBalance
+        );
     }
 
     function claimEstimate()
@@ -180,6 +192,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         returns (
             uint256 claimable,
             uint256 missedPayouts,
+            uint256 currentBalance,
             bool lastClaim
         )
     {
@@ -187,10 +200,10 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             paidOutAmounts[_msgSender()] > 0,
             'DGNXLegacyDisburser::claimStart missing initial claim'
         );
-        uint256 _currentBalance = ERC20(token).balanceOf(_msgSender());
         uint256 _timeBehind = block.timestamp -
             lastPayoutTimestamp[_msgSender()];
         uint256 _amountLeft = amountLeft(_msgSender());
+        currentBalance = ERC20(token).balanceOf(_msgSender());
         missedPayouts =
             (_timeBehind - (_timeBehind % timeInterval)) /
             timeInterval;
@@ -201,14 +214,14 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
                 lastClaim = true;
             }
 
-            uint256 _balance = _currentBalance;
+            uint256 _balance = currentBalance;
             for (uint256 i; i < missedPayouts; i++) {
                 _balance += (_balance * ppRecurring) / 100;
             }
-            if (_balance - _currentBalance > _amountLeft) {
+            if (_balance - currentBalance > _amountLeft) {
                 claimable = _amountLeft;
             } else {
-                claimable = _balance - _currentBalance;
+                claimable = _balance - currentBalance;
             }
         }
     }
@@ -226,6 +239,22 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
 
     function amountLeft(address addr) public view returns (uint256) {
         return (legacyAmounts[addr] - paidOutAmounts[addr]);
+    }
+
+    function timeLeftUntilNextClaim(address addr)
+        public
+        view
+        returns (uint256 timeLeft)
+    {
+        if (
+            lastPayoutTimestamp[addr] > 0 &&
+            lastPayoutTimestamp[addr] + timeInterval > block.timestamp
+        ) {
+            timeLeft =
+                lastPayoutTimestamp[addr] +
+                timeInterval -
+                block.timestamp;
+        }
     }
 
     function hasAmountLeft(address addr) public view returns (bool) {

@@ -82,15 +82,15 @@ const config: HardhatUserConfig = {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
       accounts: [`0x${process.env.PRIAVTE_KEY_AVAX_FUJI}`],
     },
-    // localfork: {
-    //   url: "http://127.0.0.1:8545",
-    //   gasPrice: 20000000000,
-    //   accounts: [`0x${process.env.PRIVATE_KEY_LOCALFORK}`],
-    // },
+    localfork: {
+      url: "http://127.0.0.1:8545",
+      gasPrice: 225000000000,
+      accounts: [`0x${process.env.PRIAVTE_KEY_AVAX_FUJI}`],
+    },
     // mainnet: {
     //   url: "https://bsc-dataseed.binance.org/",
     //   chainId: 56,
-    //   gasPrice: 20000000000,
+    //   gasPrice: 225000000000,
     //   accounts: {mnemonic: process.env.PRIVATE_KEY}
     // }
     // hardhat: {
@@ -100,7 +100,7 @@ const config: HardhatUserConfig = {
     //   },
     // },
     hardhat: {
-      chainId: 43114,
+      chainId: parseInt(process.env.CHAIN_ID || ""),
       gasPrice: 225000000000,
       accounts: {
         count: 100,
