@@ -120,8 +120,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             paidOutAmounts[_msgSender()] == 0,
             'DGNXLegacyDisburser::claimStart already claimed initial funds'
         );
-        uint256 legacyAmount = legacyAmounts[_msgSender()];
-        uint256 initialPayout = (legacyAmount / 100) * ppInitial;
+        uint256 initialPayout = (legacyAmounts[_msgSender()] / 100) * ppInitial;
         require(
             initialPayout <= ERC20(token).balanceOf(address(this)),
             'DGNXLegacyDisburser::claimStart not enough funds claimed initial funds'
@@ -237,8 +236,11 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         return _start;
     }
 
-    function amountLeft(address addr) public view returns (uint256) {
-        return (legacyAmounts[addr] - paidOutAmounts[addr]);
+    function amountLeft(address addr) public view returns (uint256 amount) {
+        amount = legacyAmounts[addr];
+        if (amount > 0 && paidOutAmounts[addr] > 0) {
+            amount = legacyAmounts[addr] - paidOutAmounts[addr];
+        }
     }
 
     function timeLeftUntilNextClaim(address addr)
