@@ -145,7 +145,7 @@ describe("Legacy Disburser", () => {
       );
     });
 
-    it.only("should be able to make initial claim", async () => {
+    it("should be able to make initial claim", async () => {
       await expect(disburser.connect(addr1).claimStart())
         .to.emit(disburser, "StartClaim")
         .withArgs(() => true, addr1.address, tokens(10000));
