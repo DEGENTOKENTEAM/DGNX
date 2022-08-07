@@ -225,7 +225,7 @@ describe("Legacy Disburser", () => {
       await (await disburser.connect(addr1).claimStart()).wait();
       await network.provider.send("hardhat_mine", ["0x3C", "0x1"]);
       await expect(disburser.connect(addr1).claim())
-        .to.emit(disburser, "Claim")
+        .to.emit(disburser, "RecurringClaim")
         .withArgs(
           () => true,
           addr1.address,
@@ -320,7 +320,7 @@ describe("Legacy Disburser", () => {
       );
       await network.provider.send("hardhat_mine", ["0x2", "0xB5"]);
       await expect(disburser.connect(addr1).claim())
-        .to.emit(disburser, "Claim")
+        .to.emit(disburser, "RecurringClaim")
         .withArgs(
           () => true,
           addr1.address,

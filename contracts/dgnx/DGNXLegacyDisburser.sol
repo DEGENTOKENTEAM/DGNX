@@ -32,7 +32,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
     address[] private legacyAmountAddresses;
 
     event StartClaim(uint256 timestamp, address sender, uint256 amount);
-    event Claim(
+    event RecurringClaim(
         uint256 timestamp,
         address sender,
         uint256 amount,
@@ -175,7 +175,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             'DGNXLegacyDisburser::claimStart Tx failed'
         );
 
-        emit Claim(
+        emit RecurringClaim(
             lastPayoutTimestamp[_msgSender()],
             _msgSender(),
             claimable,
