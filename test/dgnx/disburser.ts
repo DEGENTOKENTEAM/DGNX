@@ -145,10 +145,10 @@ describe("Legacy Disburser", () => {
       );
     });
 
-    it("should be able to make initial claim", async () => {
-      expect(await disburser.connect(addr1).claimStart())
+    it.only("should be able to make initial claim", async () => {
+      await expect(disburser.connect(addr1).claimStart())
         .to.emit(disburser, "StartClaim")
-        .withArgs(process.env.NODE_BLOCK, addr1.address, tokens(10000));
+        .withArgs(() => true, addr1.address, tokens(10000));
       expect(await token.balanceOf(addr1.address)).to.eq(tokens(10000));
     });
 
@@ -224,12 +224,13 @@ describe("Legacy Disburser", () => {
     it("should claim successful after first interval", async () => {
       await (await disburser.connect(addr1).claimStart()).wait();
       await network.provider.send("hardhat_mine", ["0x3C", "0x1"]);
-      expect(await disburser.connect(addr1).claim())
+      await expect(disburser.connect(addr1).claim())
         .to.emit(disburser, "Claim")
         .withArgs(
-          parseInt(process.env.NODE_BLOCK || "") + 100,
+          () => true,
           addr1.address,
-          ethers.BigNumber.from("500000000000000000000")
+          ethers.BigNumber.from("500000000000000000000"),
+          ethers.BigNumber.from("10000000000000000000000")
         );
 
       expect(await token.balanceOf(addr1.address)).to.eq(
@@ -318,7 +319,22 @@ describe("Legacy Disburser", () => {
         ethers.BigNumber.from("150000000000000000000000")
       );
       await network.provider.send("hardhat_mine", ["0x2", "0xB5"]);
-      await (await disburser.connect(addr1).claim()).wait();
+      await expect(disburser.connect(addr1).claim())
+        .to.emit(disburser, "Claim")
+        .withArgs(
+          () => true,
+          addr1.address,
+          ethers.BigNumber.from("1824706406250000000000"),
+          ethers.BigNumber.from("11576250000000000000000")
+        )
+        .to.emit(disburser, "RemovedTardyHolder")
+        .withArgs(
+          () => true,
+          addr1.address,
+          addr3.address,
+          ethers.BigNumber.from("150000000000000000000000")
+        );
+
       expect(await disburser.amountLeft(addr2.address)).to.eq(
         ethers.BigNumber.from("0")
       );
