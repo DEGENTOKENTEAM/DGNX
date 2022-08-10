@@ -41,14 +41,7 @@ describe("Token", () => {
   });
 
   describe("Defaults", () => {
-    it("should be disabled on start", async () => {
-      expect(await token.connect(owner).enabled()).to.be.false;
-      await (await token.connect(owner).enable()).wait();
-      expect(await token.connect(owner).enabled()).to.be.true;
-    });
-
     it("should transfer tokens", async () => {
-      await (await token.connect(owner).enable()).wait();
       await (
         await token.connect(owner).transfer(receipientA.address, tokens(100000))
       ).wait();
@@ -58,8 +51,6 @@ describe("Token", () => {
 
   describe("Controller", () => {
     beforeEach(async () => {
-      await (await token.connect(owner).enable()).wait();
-
       controller = await (
         await ethers.getContractFactory("DGNXController")
       ).deploy(token.address, busd.address);

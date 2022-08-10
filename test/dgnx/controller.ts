@@ -38,8 +38,6 @@ describe("Controller", () => {
     token = await (await ethers.getContractFactory("DEGENX")).deploy();
     await token.deployed();
 
-    await (await token.connect(owner).enable()).wait();
-
     busd = await (
       await ethers.getContractFactory("ERC20_Token_Sample")
     ).deploy();

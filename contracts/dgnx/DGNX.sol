@@ -20,10 +20,11 @@ contract DEGENX is
     ERC20Votes
 {
     address public controller;
-    bool public enabled = false;
+    address public superOwner;
 
     constructor() ERC20('DegenX', 'DGNX') ERC20Permit('DegenX') {
         _mint(msg.sender, 21_000_000 * 10**decimals());
+        superOwner = msg.sender;
     }
 
     function _transfer(
@@ -31,15 +32,13 @@ contract DEGENX is
         address to,
         uint256 amount
     ) internal override(ERC20) {
-        require(enabled || msg.sender == owner(), 'No transfer allowed');
         if (
-            address(0) != from && // initialization for minting
-            _msgSender() != owner() &&
-            // exclude controller
-            address(0) != controller &&
-            _msgSender() != controller &&
-            from != controller &&
-            to != controller
+            address(0) != from && // mint
+            _msgSender() != owner() && // owner
+            address(0) != controller && // missing controller
+            _msgSender() != controller && // not controller
+            from != controller && // not controller
+            to != controller // not controller
         ) {
             (uint256 estimatedAmount, , , , , , ) = IDGNXController(controller)
                 .estimateTransferFees(from, to, amount);
@@ -99,12 +98,12 @@ contract DEGENX is
         controller = _newController;
     }
 
-    // this can be done one time
-    function enable() external onlyOwner {
-        enabled = true;
-    }
-
-    function snapshot() public onlyOwner {
+    function snapshot() public {
+        // need additionally a super owner to create snapshot when necessary
+        require(
+            superOwner == _msgSender() || owner() == _msgSender(),
+            'DEGENX::snapshot not allowed'
+        );
         _snapshot();
     }
 }
