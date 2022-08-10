@@ -2,9 +2,9 @@ import { ethers } from "hardhat";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const tokenAddress = "0x48C76F01C2D0C2e613f05aaAED45ce91d92873f0";
-const lockerAddress = "0x93EBA5D903a3f8AB6eFAd762Db423F6Eb94FbBbC";
-const nftAddress = "0xA4cC7ff20fBd54Aa6A7666A37859FB395B036C03";
+const tokenAddress = "0x9F4DFaeF621C0bAA1007B970C66dbea779a6b051";
+const lockerAddress = "0x3B4196CD81C8564e1Fbb28bdD401D27cF9200f2a";
+const nftAddress = "0xc744ca7919cE10c2893F067c79DA252AB89A006b";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
