@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const tokenAddress = "0x48C76F01C2D0C2e613f05aaAED45ce91d92873f0";
-const lockerAddress = "0x93EBA5D903a3f8AB6eFAd762Db423F6Eb94FbBbC";
+const lockerAddress = "0x3B4196CD81C8564e1Fbb28bdD401D27cF9200f2a";
 
 async function main() {
   const [deployer] = await ethers.getSigners();

@@ -9,7 +9,7 @@ import { BigNumber } from "ethers";
 dotenv.config();
 
 const tokenAddress = "0x48C76F01C2D0C2e613f05aaAED45ce91d92873f0";
-const disburserAddress = "0x9F4DFaeF621C0bAA1007B970C66dbea779a6b051";
+const disburserAddress = "0x55643aB1809cC48BB0A768E71c564CF8639fbd41";
 
 async function main() {
   const [deployer] = await ethers.getSigners();

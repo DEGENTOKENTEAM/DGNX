@@ -82,6 +82,18 @@ const config: HardhatUserConfig = {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
       accounts: [`0x${process.env.PRIAVTE_KEY_AVAX_FUJI}`],
     },
+    // mastertoco: {
+    //   chainId: 43113,
+    //   gasPrice: 225000000000,
+    //   url: "https://avaxtestnet.mastertoco.de",
+    //   accounts: [`0x${process.env.PRIAVTE_KEY_AVAX_FUJI}`],
+    // },
+    // avaxmainnettest: {
+    //   chainId: 43114,
+    //   gasPrice: 225000000000,
+    //   url: "https://api.avax.network/ext/bc/C/rpc",
+    //   accounts: [`0x${process.env.PRIAVTE_KEY_AVAX_MAINNET_TEST}`],
+    // },
     localfork: {
       url: "http://127.0.0.1:8545",
       gasPrice: 225000000000,
