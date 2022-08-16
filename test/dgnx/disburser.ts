@@ -47,8 +47,6 @@ describe("Legacy Disburser", () => {
     token = await (await ethers.getContractFactory("DEGENX")).deploy();
     await token.deployed();
 
-    await (await token.connect(owner).enable()).wait();
-
     locker = await (
       await ethers.getContractFactory("DGNXLocker")
     ).deploy(token.address);
@@ -92,6 +90,11 @@ describe("Legacy Disburser", () => {
     it("check if has amout left", async () => {
       await prepareAddresses();
       expect(await disburser.hasAmountLeft(addr1.address)).to.be.true;
+    });
+
+    it("check if legacyAmount is available", async () => {
+      await prepareAddresses();
+      expect(await disburser.legacyAmounts(addr1.address)).to.eq(tokens(100000));
     });
 
     it("check if has not started claming yet", async () => {
