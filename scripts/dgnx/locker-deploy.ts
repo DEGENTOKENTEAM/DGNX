@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const tokenAddress = "0x9F4DFaeF621C0bAA1007B970C66dbea779a6b051";
+const tokenAddress = "0xA78384C229A8Ae30DC7D72BB2216d4391ec98758";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
