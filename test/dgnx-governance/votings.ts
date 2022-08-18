@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { Contract, ContractReceipt } from "ethers";
 import { ethers, network } from "hardhat";
-import { tokens } from "./../helpers";
+import { tokens } from "../helpers";
 import * as dotenv from "dotenv";
 dotenv.config();
 
