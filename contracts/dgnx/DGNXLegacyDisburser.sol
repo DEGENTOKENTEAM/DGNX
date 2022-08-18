@@ -120,7 +120,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             paidOutAmounts[_msgSender()] == 0,
             'DGNXLegacyDisburser::claimStart already claimed initial funds'
         );
-        uint256 initialPayout = (legacyAmounts[_msgSender()] / 100) * ppInitial;
+        uint256 initialPayout = (legacyAmounts[_msgSender()] * ppInitial) / 100;
         require(
             initialPayout <= ERC20(token).balanceOf(address(this)),
             'DGNXLegacyDisburser::claimStart not enough funds claimed initial funds'
@@ -317,7 +317,10 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
                     legacyAmountAddresses.length - 1
                 ];
                 legacyAmountAddresses.pop();
-                ERC20(token).transfer(locker, transferAmount);
+                require(
+                    ERC20(token).transfer(locker, transferAmount),
+                    'DGNXLegacyDisburser::removeOneTardyHolder Tx failed'
+                );
                 emit RemovedTardyHolder(
                     block.timestamp,
                     _msgSender(),
