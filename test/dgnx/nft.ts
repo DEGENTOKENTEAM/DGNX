@@ -51,7 +51,7 @@ describe("DGNXPrivateSaleNFT", () => {
       const balanceAfter: BigNumber = await deployer.getBalance();
 
       expect(balanceAfter.sub(balanceBefore)).to.eq(
-        ethers.BigNumber.from("1993156625000000000")
+        ethers.BigNumber.from("1993136825000000000")
       );
     });
   });

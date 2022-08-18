@@ -94,7 +94,9 @@ describe("Legacy Disburser", () => {
 
     it("check if legacyAmount is available", async () => {
       await prepareAddresses();
-      expect(await disburser.legacyAmounts(addr1.address)).to.eq(tokens(100000));
+      expect(await disburser.legacyAmounts(addr1.address)).to.eq(
+        tokens(100000)
+      );
     });
 
     it("check if has not started claming yet", async () => {

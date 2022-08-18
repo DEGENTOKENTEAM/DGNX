@@ -10,9 +10,11 @@ describe("Sale", () => {
   let deployer: SignerWithAddress,
     addr1: SignerWithAddress,
     addr2: SignerWithAddress,
-    addr3: SignerWithAddress,
-    locker: SignerWithAddress;
-  let token: Contract, nftContract: Contract, saleContract: Contract;
+    addr3: SignerWithAddress;
+  let token: Contract,
+    nftContract: Contract,
+    saleContract: Contract,
+    lockerContract: Contract;
 
   beforeEach(async () => {
     await ethers.provider.send("hardhat_reset", [
@@ -24,7 +26,7 @@ describe("Sale", () => {
       },
     ]);
 
-    [deployer, addr1, addr2, addr3, locker] = await ethers.getSigners();
+    [deployer, addr1, addr2, addr3] = await ethers.getSigners();
 
     token = await (await ethers.getContractFactory("DEGENX")).deploy();
     await token.deployed();
@@ -34,12 +36,15 @@ describe("Sale", () => {
     ).deploy("Ticket", "Ticker", "https://dgnx.finance/tickets/", 1, 1, 1);
     await nftContract.deployed();
 
+    lockerContract = await (
+      await ethers.getContractFactory("DGNXLocker")
+    ).deploy(token.address);
+    await lockerContract.deployed();
+
     saleContract = await (
       await ethers.getContractFactory("DGNXSale")
-    ).deploy(token.address, locker.address, nftContract.address);
+    ).deploy(token.address, lockerContract.address, nftContract.address);
     await saleContract.deployed();
-
-    await (await token.connect(deployer).enable()).wait();
 
     await (
       await token
@@ -108,7 +113,7 @@ describe("Sale", () => {
       ).to.eq(ethers.utils.parseEther("0"));
 
       expect(await deployer.getBalance()).to.be.gte(
-        ethers.BigNumber.from("10008270187400000000000")
+        ethers.BigNumber.from("10008150331925000000000")
       );
     });
 
@@ -127,7 +132,9 @@ describe("Sale", () => {
 
       await (await saleContract.connect(deployer).lockLeftovers()).wait();
 
-      expect(await token.balanceOf(locker.address)).to.eq(tokens(1000000));
+      expect(await token.balanceOf(lockerContract.address)).to.eq(
+        tokens(1000000)
+      );
     });
   });
 
@@ -254,17 +261,17 @@ describe("Sale", () => {
         await nftContract.connect(addr1).approve(saleContract.address, 1)
       ).wait();
       await (await saleContract.connect(addr1).payEntranceFee(1)).wait();
-      expect(await addr1.getBalance()).to.eq(
-        ethers.BigNumber.from("9999961997275000000000")
-      );
+      expect(await addr1.getBalance())
+        .to.be.gt(ethers.BigNumber.from("9999961000000000000000"))
+        .and.lt(ethers.BigNumber.from("9999962000000000000000"));
       await (
         await saleContract.connect(addr1).buy({
           value: ethers.utils.parseEther("1000"),
         })
       ).wait();
-      expect(await addr1.getBalance()).to.eq(
-        ethers.BigNumber.from("9944947680300000000000")
-      );
+      expect(await addr1.getBalance())
+        .to.be.gt(ethers.BigNumber.from("9944947000000000000000"))
+        .and.lt(ethers.BigNumber.from("9944948000000000000000"));
     });
 
     it("should send tokens when bought", async () => {
