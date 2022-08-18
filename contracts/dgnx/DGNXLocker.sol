@@ -12,19 +12,12 @@ contract DGNXLocker is Ownable {
     address public token;
     uint256 public balance;
 
-    event Withdraw(address to, uint256 amount, uint256 proposalId);
-    event Deposit(address from, uint256 amount);
+    event Withdraw(address receipient, uint256 amount, uint256 proposalId);
+    event Sync(address sender, uint256 newBalance);
 
     constructor(address _token) {
-        require(_token != address(0), 'no token');
+        require(_token != address(0), 'DGNXLocker wrong token');
         token = _token;
-    }
-
-    function deposit(uint256 amount) external onlyOwner {
-        require(ERC20(token).balanceOf(msg.sender) >= amount, 'no funds');
-        balance += amount;
-        ERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        emit Deposit(msg.sender, amount);
     }
 
     function withdraw(
@@ -32,9 +25,15 @@ contract DGNXLocker is Ownable {
         uint256 amount,
         uint256 proposalId
     ) external onlyOwner {
-        require(amount <= balance, 'insufficient balance');
+        require(amount <= balance, 'DGNXLocker::withdraw insufficient balance');
         balance -= amount;
         ERC20(token).safeTransfer(to, amount);
         emit Withdraw(to, amount, proposalId);
+    }
+
+    function sync() public {
+        uint256 _balance = ERC20(token).balanceOf(address(this));
+        balance = _balance;
+        emit Sync(_msgSender(), _balance);
     }
 }
