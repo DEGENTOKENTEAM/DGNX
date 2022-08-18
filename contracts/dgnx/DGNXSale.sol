@@ -6,7 +6,9 @@ import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+
 import '../interfaces/IDGNXPrivateSaleNFT.sol';
+import '../interfaces/IDGNXLocker.sol';
 
 contract DGNXSale is ReentrancyGuard, Ownable, Pausable {
     uint256 public supplySale;
@@ -61,6 +63,7 @@ contract DGNXSale is ReentrancyGuard, Ownable, Pausable {
     function lockLeftovers() external onlyOwner {
         if (supplySale > 0) {
             require(ERC20(dgnx).transfer(locker, supplySale), 'tx failed');
+            IDGNXLocker(locker).sync();
         }
     }
 

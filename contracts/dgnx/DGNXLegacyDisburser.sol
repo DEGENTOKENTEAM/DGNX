@@ -8,6 +8,8 @@ import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
 
+import '../interfaces/IDGNXLocker.sol';
+
 contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
     using SafeERC20 for ERC20;
     using Address for address;
@@ -273,6 +275,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
 
     function transferTokensToLocker(uint256 amount) private {
         ERC20(token).safeTransfer(locker, amount);
+        IDGNXLocker(locker).sync();
     }
 
     function addAddresses(address[] memory addresses, uint256[] memory amounts)
@@ -321,6 +324,8 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
                     ERC20(token).transfer(locker, transferAmount),
                     'DGNXLegacyDisburser::removeOneTardyHolder Tx failed'
                 );
+                IDGNXLocker(locker).sync();
+
                 emit RemovedTardyHolder(
                     block.timestamp,
                     _msgSender(),
