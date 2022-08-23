@@ -5,7 +5,9 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-contract DGNXLocker is Ownable {
+import '../interfaces/IDGNXLocker.sol';
+
+contract DGNXLocker is IDGNXLocker, Ownable {
     using SafeERC20 for ERC20;
     using Address for address;
 
@@ -25,7 +27,10 @@ contract DGNXLocker is Ownable {
         uint256 amount,
         uint256 proposalId
     ) external onlyOwner {
-        require(amount <= assetBalance, 'DGNXLocker::withdraw insufficient balance');
+        require(
+            amount <= assetBalance,
+            'DGNXLocker::withdraw insufficient balance'
+        );
         assetBalance -= amount;
         ERC20(token).safeTransfer(to, amount);
         emit Withdraw(to, amount, proposalId);

@@ -81,13 +81,13 @@ contract DGNXPrivateSaleNFT is
     );
 
     constructor(
-        string memory name,
-        string memory symbol,
+        string memory _name,
+        string memory _symbol,
         string memory assetsBaseURI,
         uint256 goldMaxSupply,
         uint256 silverMaxSupply,
         uint256 bronzeMaxSupply
-    ) ERC721(name, symbol) {
+    ) ERC721(_name, _symbol) {
         // set bronze info for contract
         _goldMaxSupply = goldMaxSupply;
         _silverMaxSupply = silverMaxSupply;
@@ -162,22 +162,6 @@ contract DGNXPrivateSaleNFT is
         } else {
             return _mintPriceGold * (10**(18));
         }
-    }
-
-    /**
-     * all tokens belonging to a wallet address
-     */
-    function _tokensByOwner(address tOwner)
-        internal
-        view
-        returns (uint256[] memory)
-    {
-        uint256 balOf = balanceOf(tOwner);
-        uint256[] memory tokens = new uint256[](balOf);
-        for (uint256 i = 0; i < balOf; i++) {
-            tokens[i] = tokenOfOwnerByIndex(tOwner, i);
-        }
-        return tokens;
     }
 
     // --- owners call --- //

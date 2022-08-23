@@ -40,6 +40,7 @@ contract DGNXSale is ReentrancyGuard, Ownable, Pausable {
 
     event PayEntranceFee(address sender, uint256 tokenId, uint256 blockNumber);
     event AllocateForSale(address sender, uint256 amount, uint256 blockNumber);
+    event StartClaim(address sender, uint256 blockNumber);
     event Claim(address sender, uint256 amount, uint256 blockNumber);
     event Bought(
         address sender,
@@ -154,17 +155,9 @@ contract DGNXSale is ReentrancyGuard, Ownable, Pausable {
         emit Claim(_msgSender(), amount, block.number);
     }
 
-    /**
-     * Starts the claiming process
-     */
+    // can only be done once
     function startClaim() external onlyOwner {
         claimActive = true;
-    }
-
-    /**
-     * Stops the claiming process
-     */
-    function stopClaim() external onlyOwner {
-        claimActive = false;
+        emit StartClaim(_msgSender(), block.number);
     }
 }

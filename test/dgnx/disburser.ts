@@ -77,16 +77,6 @@ describe("Legacy Disburser", () => {
       await prepareAddresses();
     });
 
-    it("can transfer tokens to a specific", async () => {
-      await (
-        await token.connect(owner).transfer(disburser.address, tokens(1))
-      ).wait();
-      await (
-        await disburser.connect(owner).transferTokensTo(addr3.address)
-      ).wait();
-      expect(await token.balanceOf(addr3.address)).to.eq(tokens(1));
-    });
-
     it("check if has amout left", async () => {
       await prepareAddresses();
       expect(await disburser.hasAmountLeft(addr1.address)).to.be.true;

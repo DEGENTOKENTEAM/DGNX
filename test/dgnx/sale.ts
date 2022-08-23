@@ -376,7 +376,13 @@ describe("Sale", () => {
         })
       ).wait();
       await (await saleContract.connect(deployer).pause()).wait();
-      await (await saleContract.connect(deployer).startClaim()).wait();
+
+      await expect(saleContract.connect(deployer).startClaim())
+        .to.emit(saleContract, "StartClaim")
+        .withArgs(
+          deployer.address,
+          (await ethers.provider.getBlockNumber()) + 1
+        );
       await (await saleContract.connect(addr1).claim()).wait();
       expect(await token.balanceOf(addr1.address)).to.eq(
         ethers.BigNumber.from("13333333333333333333333")

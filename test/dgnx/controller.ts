@@ -96,9 +96,9 @@ describe("Controller", () => {
         tokens(1000000)
       );
 
-      await (
-        await token.connect(owner).updateController(controllerNew.address)
-      ).wait();
+      await expect(token.connect(owner).updateController(controllerNew.address))
+        .to.emit(controllerNew, "MigratingController")
+        .withArgs(owner.address);
 
       expect(await token.controller()).to.equal(controllerNew.address);
 
@@ -311,9 +311,11 @@ describe("Controller", () => {
 
   describe("Flags", () => {
     it("should be able to set liquidity booster threshold", async () => {
-      await (
-        await controller.connect(owner).setLiquidityThreshold(tokens(1001))
-      ).wait();
+      await expect(
+        controller.connect(owner).setLiquidityThreshold(tokens(1001))
+      )
+        .to.emit(controller, "SetLiquidityThreshold")
+        .withArgs(owner.address, tokens(1001));
       expect(await controller.liquidityThreshold()).to.equal(tokens(1001));
     });
 
@@ -323,53 +325,76 @@ describe("Controller", () => {
     });
 
     it("should be able to set liquidity backing threshold", async () => {
-      await (
-        await controller.connect(owner).setBackingThreshold(tokens(10))
-      ).wait();
+      await expect(controller.connect(owner).setBackingThreshold(tokens(10)))
+        .to.emit(controller, "SetBackingThreshold")
+        .withArgs(owner.address, tokens(10));
+
       expect(await controller.backingThreshold()).to.equal(tokens(10));
     });
 
     it("should be able to set platform threshold", async () => {
-      await (
-        await controller.connect(owner).setPlatformThreshold(tokens(10))
-      ).wait();
+      await expect(controller.connect(owner).setPlatformThreshold(tokens(10)))
+        .to.emit(controller, "SetPlatformThreshold")
+        .withArgs(owner.address, tokens(10));
+
       expect(await controller.platformThreshold()).to.equal(tokens(10));
     });
 
     it("should be able to set launchpad threshold", async () => {
-      await (
-        await controller.connect(owner).setInvestmentFundThreshold(tokens(10))
-      ).wait();
+      await expect(
+        controller.connect(owner).setInvestmentFundThreshold(tokens(10))
+      )
+        .to.emit(controller, "SetInvestmentFundThreshold")
+        .withArgs(owner.address, tokens(10));
+
       expect(await controller.investmentFundThreshold()).to.equal(tokens(10));
     });
 
     it("should be able to set burn tax", async () => {
-      await (await controller.connect(owner).setBurnTax(100)).wait();
+      await expect(controller.connect(owner).setBurnTax(100))
+        .to.emit(controller, "SetBurnTax")
+        .withArgs(owner.address, 100);
+
       expect(await controller.burnTax()).to.equal(100);
     });
 
     it("should be able to set backing tax", async () => {
-      await (await controller.connect(owner).setBackingTax(100)).wait();
+      await expect(controller.connect(owner).setBackingTax(100))
+        .to.emit(controller, "SetBackingTax")
+        .withArgs(owner.address, 100);
+
       expect(await controller.backingTax()).to.equal(100);
     });
 
     it("should be able to set liquidity tax", async () => {
-      await (await controller.connect(owner).setLiquidityTax(100)).wait();
+      await expect(controller.connect(owner).setLiquidityTax(100))
+        .to.emit(controller, "SetLiquidityTax")
+        .withArgs(owner.address, 100);
+
       expect(await controller.liquidityTax()).to.equal(100);
     });
 
     it("should be able to set marketing tax", async () => {
-      await (await controller.connect(owner).setMarketingTax(100)).wait();
+      await expect(controller.connect(owner).setMarketingTax(100))
+        .to.emit(controller, "SetMarketingTax")
+        .withArgs(owner.address, 100);
+
       expect(await controller.marketingTax()).to.equal(100);
     });
 
     it("should be able to set platform tax", async () => {
-      await (await controller.connect(owner).setPlatformTax(100)).wait();
+      await expect(controller.connect(owner).setPlatformTax(100))
+        .to.emit(controller, "SetPlatformTax")
+        .withArgs(owner.address, 100);
+
       expect(await controller.platformTax()).to.equal(100);
     });
 
     it("should be able to set investment fund tax", async () => {
-      await (await controller.connect(owner).setInvestmentFundTax(100)).wait();
+      await expect(controller.connect(owner).setInvestmentFundTax(100))
+        .to.emit(controller, "SetInvestmentFundTax")
+        .withArgs(owner.address, 100);
+
       expect(await controller.investmentFundTax()).to.equal(100);
     });
 
@@ -384,8 +409,14 @@ describe("Controller", () => {
     });
 
     it("should be able to enable fee after disabling it", async () => {
-      await (await controller.connect(owner).feeOff()).wait();
-      await (await controller.connect(owner).feeOn()).wait();
+      await expect(controller.feeOff())
+        .to.emit(controller, "TurnFeesOff")
+        .withArgs(owner.address);
+
+      await expect(controller.feeOn())
+        .to.emit(controller, "TurnFeesOn")
+        .withArgs(owner.address);
+
       expect(await controller.applyFee()).to.be.true;
     });
   });
@@ -396,20 +427,28 @@ describe("Controller", () => {
         await controller.connect(owner).allowContract(controllerNew.address)
       ).wait();
     });
+
     it("should check if another contract has allowance", async () => {
       await (
         await controller.connect(owner).allowContract(controllerNew.address)
       ).wait();
       expect(await controller.isAllowed(controllerNew.address)).to.be.true;
     });
+
     it("should be able to remove a contract from the allowance list", async () => {
-      await (
-        await controller.connect(owner).allowContract(controllerNew.address)
-      ).wait();
+      await expect(
+        controller.connect(owner).allowContract(controllerNew.address)
+      )
+        .to.emit(controller, "AllowContract")
+        .withArgs(owner.address, controllerNew.address);
       expect(await controller.isAllowed(controllerNew.address)).to.be.true;
-      await (
-        await controller.connect(owner).removeContract(controllerNew.address)
-      ).wait();
+
+      await expect(
+        controller.connect(owner).removeContract(controllerNew.address)
+      )
+        .to.emit(controller, "RemoveContract")
+        .withArgs(owner.address, controllerNew.address);
+
       expect(await controller.isAllowed(controllerNew.address)).to.be.false;
     });
   });
@@ -619,11 +658,11 @@ describe("Controller", () => {
 
       expect(await tokenA.balanceOf(controller.address)).to.eq(tokens(20000));
 
-      await (
-        await controller
-          .connect(owner)
-          .recoverToken(tokenA.address, addr1.address)
-      ).wait();
+      await expect(
+        controller.connect(owner).recoverToken(tokenA.address, addr1.address)
+      )
+        .to.emit(controller, "RecoverToken")
+        .withArgs(owner.address, tokenA.address, tokens(20000));
 
       expect(await tokenA.balanceOf(addr1.address)).to.eq(tokens(20000));
     });

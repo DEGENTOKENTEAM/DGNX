@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
@@ -15,8 +15,8 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
     using Address for address;
     using SafeMath for uint256;
 
-    address token;
-    address locker;
+    address public token;
+    address public locker;
 
     bool public _start = false;
 
@@ -267,10 +267,6 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
 
     function hasStartedClaiming(address addr) public view returns (bool) {
         return paidOutAmounts[addr] > 0;
-    }
-
-    function transferTokensTo(address addr) external onlyOwner {
-        ERC20(token).safeTransfer(addr, ERC20(token).balanceOf(address(this)));
     }
 
     function transferTokensToLocker(uint256 amount) private {

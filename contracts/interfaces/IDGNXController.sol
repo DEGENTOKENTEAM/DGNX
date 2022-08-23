@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 interface IDGNXController {
     function transferFees(
@@ -40,8 +40,4 @@ interface IDGNXController {
     function feeOff() external;
 
     function feeOn() external;
-
-    function setLiquidityThreshold(uint256 amount) external;
-
-    function setBackingThreshold(uint256 amount) external;
 }

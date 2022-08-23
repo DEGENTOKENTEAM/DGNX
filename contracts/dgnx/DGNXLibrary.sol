@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';

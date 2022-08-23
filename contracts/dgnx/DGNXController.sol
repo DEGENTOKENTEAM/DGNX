@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity ^0.8.4;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
@@ -12,9 +12,10 @@ import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
 
+import './../interfaces/IDGNXController.sol';
 import './DGNXLibrary.sol';
 
-contract DGNXController is ReentrancyGuard, Ownable {
+contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
     using SafeERC20 for ERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -77,7 +78,22 @@ contract DGNXController is ReentrancyGuard, Ownable {
     event PairRemoved(address pair, address sender);
     event FactoryAdded(address factory, address sender);
     event FactoryRemoved(address factory, address sender);
-
+    event TurnFeesOn(address sender);
+    event TurnFeesOff(address sender);
+    event MigratingController(address originalSender);
+    event RecoverToken(address sender, address asset, uint256 amount);
+    event AllowContract(address sender, address target);
+    event RemoveContract(address sender, address target);
+    event SetBurnTax(address sender, uint256 tax);
+    event SetBackingTax(address sender, uint256 tax);
+    event SetLiquidityTax(address sender, uint256 tax);
+    event SetMarketingTax(address sender, uint256 tax);
+    event SetPlatformTax(address sender, uint256 tax);
+    event SetInvestmentFundTax(address sender, uint256 tax);
+    event SetLiquidityThreshold(address sender, uint256 threshold);
+    event SetBackingThreshold(address sender, uint256 threshold);
+    event SetPlatformThreshold(address sender, uint256 threshold);
+    event SetInvestmentFundThreshold(address sender, uint256 threshold);
     event DistributeLiquidity(
         address token0,
         uint256 amount0,
@@ -85,8 +101,6 @@ contract DGNXController is ReentrancyGuard, Ownable {
         uint256 amount1,
         address sender
     );
-
-    uint256 constant MAX_INT = 2**256 - 1;
 
     constructor(address _dgnx, address _busd) {
         require(_dgnx != address(0), 'wrong token');
@@ -547,10 +561,12 @@ contract DGNXController is ReentrancyGuard, Ownable {
 
     function feeOff() external onlyAllowed {
         applyFee = false;
+        emit TurnFeesOff(msg.sender);
     }
 
     function feeOn() external onlyAllowed {
         applyFee = true;
+        emit TurnFeesOn(msg.sender);
     }
 
     // if we update controller, we need to transfer funds to new controller. This will be called by new controller
@@ -618,6 +634,7 @@ contract DGNXController is ReentrancyGuard, Ownable {
         );
         previousController = _previousController;
         DGNXController(previousController).migrate();
+        emit MigratingController(tx.origin);
     }
 
     // if there are any tokens send by accident, we can revover it
@@ -631,20 +648,23 @@ contract DGNXController is ReentrancyGuard, Ownable {
         for (uint256 i; i < allPairs.length; i++) {
             require(allPairs[i] != token, 'No drain allowed');
         }
-        require(
-            ERC20(token).transfer(to, ERC20(token).balanceOf(address(this))),
-            'tx failed'
-        );
+        uint256 amount = ERC20(token).balanceOf(address(this));
+        require(ERC20(token).transfer(to, amount), 'tx failed');
+        emit RecoverToken(msg.sender, token, amount);
     }
 
     function allowContract(address addr) external onlyAllowed nonReentrant {
+        require(addr != address(0), 'zero address');
+        require(addr != DEAD, '0xdead address');
         require(addr.isContract(), 'no contract');
         allowedContracts[addr] = true;
+        emit AllowContract(msg.sender, addr);
     }
 
     function removeContract(address addr) external onlyAllowed {
         require(allowedContracts[addr], 'no contract');
         delete allowedContracts[addr];
+        emit RemoveContract(msg.sender, addr);
     }
 
     function isAllowed(address addr) public view returns (bool) {
@@ -662,46 +682,62 @@ contract DGNXController is ReentrancyGuard, Ownable {
     }
 
     function setBurnTax(uint256 _tax) external onlyOwner {
+        require(_tax <= 500, 'max tax is 5');
         burnTax = _tax;
+        emit SetBurnTax(msg.sender, _tax);
     }
 
     function setBackingTax(uint256 _tax) external onlyOwner {
+        require(_tax <= 500, 'max tax is 5');
         backingTax = _tax;
+        emit SetBackingTax(msg.sender, _tax);
     }
 
     function setLiquidityTax(uint256 _tax) external onlyOwner {
+        require(_tax <= 500, 'max tax is 5');
         liquidityTax = _tax;
+        emit SetLiquidityTax(msg.sender, _tax);
     }
 
     function setMarketingTax(uint256 _tax) external onlyOwner {
+        require(_tax <= 500, 'max tax is 5');
         marketingTax = _tax;
+        emit SetMarketingTax(msg.sender, _tax);
     }
 
     function setPlatformTax(uint256 _tax) external onlyOwner {
+        require(_tax <= 500, 'max tax is 5');
         platformTax = _tax;
+        emit SetPlatformTax(msg.sender, _tax);
     }
 
     function setInvestmentFundTax(uint256 _tax) external onlyOwner {
+        require(_tax <= 500, 'max tax is 5');
         investmentFundTax = _tax;
+        emit SetInvestmentFundTax(msg.sender, _tax);
     }
 
     function setLiquidityThreshold(uint256 _threshold) external onlyOwner {
         require(_threshold >= 1000 * 10**18, 'bad threshold');
         liquidityThreshold = _threshold;
+        emit SetLiquidityThreshold(msg.sender, _threshold);
     }
 
     function setBackingThreshold(uint256 _threshold) external onlyOwner {
         require(_threshold >= 10 * 10**18, 'bad threshold');
         backingThreshold = _threshold;
+        emit SetBackingThreshold(msg.sender, _threshold);
     }
 
     function setPlatformThreshold(uint256 _threshold) external onlyOwner {
         require(_threshold >= 10 * 10**18, 'bad threshold');
         platformThreshold = _threshold;
+        emit SetPlatformThreshold(msg.sender, _threshold);
     }
 
     function setInvestmentFundThreshold(uint256 _threshold) external onlyOwner {
         require(_threshold >= 10 * 10**18, 'bad threshold');
         investmentFundThreshold = _threshold;
+        emit SetInvestmentFundThreshold(msg.sender, _threshold);
     }
 }
