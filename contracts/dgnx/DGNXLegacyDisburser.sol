@@ -33,6 +33,8 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
 
     address[] private legacyAmountAddresses;
 
+    event AddAddresses(address[] addresses, uint256[] amounts, address sender);
+    event StartLegacyDisburser(uint256 timestamp, address sender);
     event StartClaim(uint256 timestamp, address sender, uint256 amount);
     event RecurringClaim(
         uint256 timestamp,
@@ -232,6 +234,7 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         require(!_start, 'DGNXLegacyDisburser::start already started');
         _start = true;
         timeStarted = block.timestamp;
+        emit StartLegacyDisburser(timeStarted, _msgSender());
     }
 
     function isStarted() public view returns (bool) {
@@ -284,11 +287,15 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
         );
 
         for (uint256 i; i < addresses.length; i++) {
-            if (legacyAmounts[addresses[i]] == 0) {
+            if (
+                legacyAmounts[addresses[i]] == 0 && addresses[i] != address(0)
+            ) {
                 legacyAmounts[addresses[i]] = amounts[i];
                 legacyAmountAddresses.push(addresses[i]);
             }
         }
+
+        emit AddAddresses(addresses, amounts, _msgSender());
     }
 
     function removeOneTardyHolder() internal {
@@ -296,8 +303,8 @@ contract DGNXLegacyDisburser is ReentrancyGuard, Ownable {
             block.timestamp - timeStarted > timeIntervalTardyHolder &&
             legacyAmountAddresses.length > 0
         ) {
-            address tardyHolder;
-            uint256 tardyHolderIdx;
+            address tardyHolder = address(0);
+            uint256 tardyHolderIdx = 0;
             for (
                 uint256 i;
                 i < legacyAmountAddresses.length && tardyHolder == address(0);
