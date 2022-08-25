@@ -22,6 +22,7 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
 
     bool public inFee = false;
     bool public applyFee = true;
+    bool public inBpMode = true;
 
     // track busd
     uint256 public liquidityBUSD;
@@ -94,6 +95,7 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
     event SetBackingThreshold(address sender, uint256 threshold);
     event SetPlatformThreshold(address sender, uint256 threshold);
     event SetInvestmentFundThreshold(address sender, uint256 threshold);
+    event DisableBotProtection(address sender);
     event DistributeLiquidity(
         address token0,
         uint256 amount0,
@@ -129,6 +131,18 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
         uint256 amount
     ) external virtual onlyAllowed returns (uint256 newAmount) {
         require(amount > 0, 'no amount set');
+
+        // bot protection will be disabled as soon as project officially announces open for trading
+        // until then we have bot protection activated
+        if (inBpMode) {
+            newAmount = amount / 100; // 1%
+            uint256 penaltyAmount = amount - newAmount; // 99%
+            require(
+                ERC20(dgnx).transfer(MARKETING, penaltyAmount),
+                'tx failed'
+            );
+            return newAmount;
+        }
 
         bool isSell = isPair(to);
         bool isBuy = isPair(from);
@@ -286,6 +300,14 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
         )
     {
         require(amount > 0, 'no amount set');
+
+        // bot protection will be disabled as soon as project officially announces open for trading
+        // until then we have bot protection activated
+        if (inBpMode) {
+            newAmount = amount / 100; // 1%
+            _marketingAmount = amount - newAmount; // 99%
+            return (newAmount, 0, 0, 0, _marketingAmount, 0, 0);
+        }
 
         bool isSell = isPair(to);
         bool isBuy = isPair(from);
@@ -739,5 +761,10 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
         require(_threshold >= 10 * 10**18, 'bad threshold');
         investmentFundThreshold = _threshold;
         emit SetInvestmentFundThreshold(msg.sender, _threshold);
+    }
+
+    function disableBotProtection() external onlyOwner {
+        inBpMode = false;
+        emit DisableBotProtection(msg.sender);
     }
 }
