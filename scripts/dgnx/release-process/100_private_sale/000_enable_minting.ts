@@ -1,11 +1,11 @@
 import { ethers } from "hardhat";
 import * as dotenv from "dotenv";
-import { contracts } from "../helpers";
+import { contracts } from "../../helpers";
 dotenv.config();
 
 async function main() {
   const [owner] = await ethers.getSigners();
-  const { nft, sale } = await contracts();
+  const { nft } = await contracts();
   console.log(
     `Current balance of ${owner.address} with ${ethers.utils.formatEther(
       await owner.getBalance()
@@ -13,23 +13,11 @@ async function main() {
   );
 
   try {
-    if (!(await sale.paused())) {
-      await (await sale.pause()).wait();
-      console.log("Paused sale");
-    } else {
-      console.log("Paused sale already");
-    }
     if (!(await nft.hasMintingStarted())) {
       await (await nft.startMinting()).wait();
       console.log("Minting started");
     } else {
       console.log("Minting already started");
-    }
-    if (!(await nft.hasMintingGoldStarted())) {
-      await (await nft.startMintingGold()).wait();
-      console.log("Minting GOLD started");
-    } else {
-      console.log("Minting GOLD already started");
     }
   } catch (e) {
     console.log("ERROR", e);

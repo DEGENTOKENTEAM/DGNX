@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import * as dotenv from "dotenv";
-import { contracts } from "../helpers";
+import { contracts } from "../../helpers";
 dotenv.config();
 
 async function main() {
@@ -13,24 +13,21 @@ async function main() {
   );
 
   try {
-    if (await sale.paused()) {
-      await (await sale.pause()).wait();
-      console.log("Unpaused sale");
-    } else {
-      console.log("Unpaused sale already");
-    }
-    if (await nft.hasMintingStarted()) {
-      await (await nft.stopMinting()).wait();
-      console.log("Minting stopped");
-    } else {
-      console.log("Minting already stopped");
-    }
     if (await nft.hasMintingSilverStarted()) {
       await (await nft.stopMintingSilver()).wait();
       console.log("Minting SILVER stopped");
-    } else {
-      console.log("Minting SILVER already stopped");
     }
+    if (await nft.hasMintingBronzeStarted()) {
+      await (await nft.stopMintingBronze()).wait();
+      console.log("Minting BRONZE stopped");
+    }
+    if (await nft.hasMintingGoldStarted()) {
+      await (await nft.stopMintingGold()).wait();
+      console.log("Minting GOLD stopped");
+    }
+
+    await (await sale.unpause()).wait();
+    console.log("Unpaused sale");
   } catch (e) {
     console.log("ERROR", e);
   }

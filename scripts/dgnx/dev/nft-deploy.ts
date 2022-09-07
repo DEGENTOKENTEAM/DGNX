@@ -21,11 +21,6 @@ async function main() {
 
   console.log("DGNXPrivateSaleNFT deployed to: ", nftContract.address);
   console.log("Current balance: ", (await deployer.getBalance()).toString());
-
-  await (await nftContract.connect(deployer).startMinting()).wait();
-
-  console.log("Started minting");
-  console.log("Current balance: ", (await deployer.getBalance()).toString());
 }
 
 main().catch((error) => {
