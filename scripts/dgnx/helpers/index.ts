@@ -13,12 +13,35 @@ const abiSale =
   require("../../../artifacts/contracts/dgnx/DGNXSale.sol/DGNXSale.json").abi;
 const abiDisburser =
   require("../../../artifacts/contracts/dgnx/DGNXLegacyDisburser.sol/DGNXLegacyDisburser.json").abi;
+const abiController =
+  require("../../../artifacts/contracts/dgnx/DGNXController.sol/DGNXController.json").abi;
+const abiLauncher =
+  require("../../../artifacts/contracts/dgnx/DGNXLauncher.sol/DGNXLauncher.json").abi;
 
-const addressToken = "0x9F4DFaeF621C0bAA1007B970C66dbea779a6b051";
-const addressLocker = "0x3B4196CD81C8564e1Fbb28bdD401D27cF9200f2a";
-const addressNFT = "0xc744ca7919cE10c2893F067c79DA252AB89A006b";
-const addressSale = "0xD97520d00e2445c4b7115EeF892647944BB1A1eF";
-const addressDisburser = "0x55643aB1809cC48BB0A768E71c564CF8639fbd41";
+const abiFactoryTJOE = require("../release-process/abi-tjoe-factory.json");
+const abiRouterTJOE = require("../release-process/abi-tjoe-router.json");
+const abiFactoryPANGO = require("../release-process/abi-pango-factory.json");
+const abiRouterPANGO = require("../release-process/abi-pango-router.json");
+
+const addressToken = "0x51e48670098173025C477D9AA3f0efF7BF9f7812";
+const addressLocker = "0x2c7D8bB6aBA4FFf56cDDBF9ea47ed270A10098F7";
+const addressNFT = "0xe87bFC5Ffc5510B7D56e8Dc246217aFa964C01dF";
+const addressSale = "0xA9015a356e8B1EC0d16E4073A20D7F0BA53fcc43";
+const addressDisburser = "0x8a0E3264Da08bf999AfF5a50AabF5d2dc89fab79";
+const addressController = "0xc5F0f5dA7A57eDd8674652dA500233e562FaA629";
+const addressLauncher = "0xEde887D3E36f17fA8A21b644Ec1cf0CEA2AF8C95";
+
+const addressPairTJOE = "0xbcaBb94006400eD84c3699728d6ecbAa06665c89";
+const addressPairPANGO = "0x4a8323A220D554C03733612D415d465B3f21F12e";
+
+/// Mainnet
+const addressRouterTJOE = "0x60aE616a2155Ee3d9A68541Ba4544862310933d4";
+const addressFactoryTJOE = "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10";
+const addressRouterPANGO = "0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106";
+const addressFactoryPANGO = "0xefa94DE7a4656D787667C749f7E1223D71E9FD88";
+
+/// Mainnet
+const MarketingWallet = "0x16eF18E42A7d72E52E9B213D7eABA269B90A4643";
 
 export const contracts = async () => {
   const [owner] = await ethers.getSigners();
@@ -28,5 +51,32 @@ export const contracts = async () => {
     nft: new ethers.Contract(addressNFT, abiNFT, owner),
     sale: new ethers.Contract(addressSale, abiSale, owner),
     disburser: new ethers.Contract(addressDisburser, abiDisburser, owner),
+    controller: new ethers.Contract(addressController, abiController, owner),
+    launcher: new ethers.Contract(addressLauncher, abiLauncher, owner),
+    routerTJOE: new ethers.Contract(addressRouterTJOE, abiRouterTJOE, owner),
+    routerPANGO: new ethers.Contract(addressRouterPANGO, abiRouterPANGO, owner),
+    factoryTJOE: new ethers.Contract(addressFactoryTJOE, abiFactoryTJOE, owner),
+    factoryPANGO: new ethers.Contract(
+      addressFactoryPANGO,
+      abiFactoryPANGO,
+      owner
+    ),
+    pairTJOE: !!addressPairTJOE
+      ? new ethers.Contract(addressPairTJOE, abis.abiPairTJOE, owner)
+      : null,
+    pairPANGO: !!addressPairPANGO
+      ? new ethers.Contract(addressPairPANGO, abis.abiPairPANGO, owner)
+      : null,
   };
+};
+
+export const abis = {
+  abiPairTJOE: require("../release-process/abi-tjoe-pair.json"),
+  abiPairPANGO: require("../release-process/abi-pango-pair.json"),
+};
+
+export const addresses = {
+  /// Mainnet
+  WAVAX: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+  MarketingWallet,
 };

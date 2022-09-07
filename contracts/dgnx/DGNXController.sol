@@ -22,7 +22,7 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
 
     bool public inFee = false;
     bool public applyFee = true;
-    bool public inBpMode = true;
+    bool private inBpMode = true;
 
     // track busd
     uint256 public liquidityBUSD;
@@ -44,10 +44,10 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
     uint256 public investmentFundAmount;
 
     // define thresholds for transfers
-    uint256 public backingThreshold = 1000 * 10**18;
+    uint256 public backingThreshold = 6 * 10**18;
     uint256 public liquidityThreshold = 5 * 10**18;
-    uint256 public platformThreshold = 1000 * 10**18;
-    uint256 public investmentFundThreshold = 1000 * 10**18;
+    uint256 public platformThreshold = 654 * 10**18;
+    uint256 public investmentFundThreshold = 789 * 10**18;
 
     // Some basic stuff we need
     address public constant DEV = 0xdF090f6675034Fde637031c6590FD1bBeBc4fa45;
@@ -95,7 +95,6 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
     event SetBackingThreshold(address sender, uint256 threshold);
     event SetPlatformThreshold(address sender, uint256 threshold);
     event SetInvestmentFundThreshold(address sender, uint256 threshold);
-    event DisableBotProtection(address sender);
     event DistributeLiquidity(
         address token0,
         uint256 amount0,
@@ -262,7 +261,7 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
 
             if (backingAmount > 0) {
                 (liquifyAmount, swapPair) = bestBUSDValue(backingAmount, pair);
-                if (liquifyAmount > backingThreshold) {
+                if (liquifyAmount >= backingThreshold) {
                     dgnxBefore = ERC20(dgnx).balanceOf(address(this));
                     swapTokensToBUSD(
                         backingAmount,
@@ -740,13 +739,13 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
     }
 
     function setLiquidityThreshold(uint256 _threshold) external onlyOwner {
-        require(_threshold >= 1000 * 10**18, 'bad threshold');
+        require(_threshold >= 5 * 10**18, 'bad threshold');
         liquidityThreshold = _threshold;
         emit SetLiquidityThreshold(msg.sender, _threshold);
     }
 
     function setBackingThreshold(uint256 _threshold) external onlyOwner {
-        require(_threshold >= 10 * 10**18, 'bad threshold');
+        require(_threshold >= 5 * 10**18, 'bad threshold');
         backingThreshold = _threshold;
         emit SetBackingThreshold(msg.sender, _threshold);
     }
@@ -765,6 +764,5 @@ contract DGNXController is IDGNXController, ReentrancyGuard, Ownable {
 
     function disableBotProtection() external onlyOwner {
         inBpMode = false;
-        emit DisableBotProtection(msg.sender);
     }
 }

@@ -5,6 +5,7 @@ import { ethers } from "hardhat";
 import { tokens, createPair, pairByAddress } from "./../helpers";
 
 import * as dotenv from "dotenv";
+import { parseEther } from "ethers/lib/utils";
 dotenv.config();
 
 const dexFactoryA = process.env.DEX_A_FACTORY || "";
@@ -140,6 +141,7 @@ describe("Controller", () => {
       ).wait();
 
       await (await controller.connect(owner).setMainPair(dexPairAContract.address, [])).wait(); // prettier-ignore
+      await (await controller.connect(owner).disableBotProtection()).wait(); // prettier-ignore
 
       await (await token.connect(owner).transfer(controller.address, tokens(1000000))).wait(); // prettier-ignore
       await (await token.connect(owner).transfer(addr1.address, tokens(1000000))).wait(); // prettier-ignore
@@ -164,10 +166,10 @@ describe("Controller", () => {
         ethers.BigNumber.from("0")
       );
       expect(await dexPairAContract.balanceOf(controller.address)).to.eq(
-        ethers.BigNumber.from("742224914518328546619")
+        ethers.BigNumber.from("731280074642112171612")
       );
       expect(await token.balanceOf(controller.address)).to.eq(
-        ethers.BigNumber.from("996003331315081602620430")
+        ethers.BigNumber.from("995014357754767576201924")
       );
 
       await (
@@ -188,10 +190,10 @@ describe("Controller", () => {
         ethers.BigNumber.from("0")
       );
       expect(await dexPairAContract.balanceOf(controllerNew.address)).to.eq(
-        ethers.BigNumber.from("742224914518328546619")
+        ethers.BigNumber.from("731280074642112171612")
       );
       expect(await token.balanceOf(controllerNew.address)).to.eq(
-        ethers.BigNumber.from("996003331315081602620430")
+        ethers.BigNumber.from("995014357754767576201924")
       );
     });
   });
@@ -320,8 +322,9 @@ describe("Controller", () => {
     });
 
     it("should be not possible to set a liquidity booster threshold below 1000", async () => {
-      await expect(controller.connect(owner).setLiquidityThreshold(tokens(999)))
-        .to.be.reverted;
+      await expect(
+        controller.connect(owner).setLiquidityThreshold(parseEther("4"))
+      ).to.be.reverted;
     });
 
     it("should be able to set liquidity backing threshold", async () => {
@@ -399,8 +402,9 @@ describe("Controller", () => {
     });
 
     it("should be not possible to set liquidity backing below 10", async () => {
-      await expect(controller.connect(owner).setLiquidityThreshold(tokens(9)))
-        .to.be.reverted;
+      await expect(
+        controller.connect(owner).setLiquidityThreshold(parseEther("4"))
+      ).to.be.reverted;
     });
 
     it("should be able to disable fee", async () => {
@@ -494,6 +498,8 @@ describe("Controller", () => {
     });
 
     it("should estimate amount when there is no pair involved in a transaction", async () => {
+      await (await controller.connect(owner).disableBotProtection()).wait();
+
       const [amount] = await controller
         .connect(owner)
         .estimateTransferFees(addr1.address, addr2.address, tokens(1));
@@ -501,7 +507,24 @@ describe("Controller", () => {
       expect(amount).to.eq(tokens(1));
     });
 
-    it("should estimate amount and fees when there is a registered pair involved", async () => {
+    it("should estimate amount and fees when there is a registered pair involved with penalty", async () => {
+      const [amount, liquidity, backing, burn, marketing, platform, launchpad] =
+        await controller
+          .connect(owner)
+          .estimateTransferFees(addr1.address, dexAPair, tokens(1000));
+
+      expect(amount).to.eq(tokens(10));
+      expect(platform).to.eq(tokens(0));
+      expect(liquidity).to.eq(tokens(0));
+      expect(backing).to.eq(tokens(0));
+      expect(burn).to.eq(tokens(0));
+      expect(marketing).to.eq(tokens(990));
+      expect(launchpad).to.eq(tokens(0));
+    });
+
+    it("should estimate amount and fees when there is a registered pair involved without penalty", async () => {
+      await (await controller.connect(owner).disableBotProtection()).wait();
+
       const [amount, liquidity, backing, burn, marketing, platform, launchpad] =
         await controller
           .connect(owner)
@@ -614,6 +637,8 @@ describe("Controller", () => {
       ).wait();
 
       await (await controller.connect(owner).setMainPair(dexBPairContract.address, [])).wait(); // prettier-ignore
+
+      await controller.connect(owner).disableBotProtection();
 
       await (await token.connect(owner).transfer(controller.address, tokens(1000000))).wait(); // prettier-ignore
       await (await token.connect(owner).transfer(addr1.address, tokens(1000000))).wait(); // prettier-ignore

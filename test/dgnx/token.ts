@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { tokens } from "./../helpers";
 
 import * as dotenv from "dotenv";
@@ -15,7 +15,7 @@ describe("Token", () => {
     receipientA: SignerWithAddress,
     receipientB: SignerWithAddress;
   let token: Contract,
-    busd: Contract,
+    asset: Contract,
     controller: Contract,
     updatedController: Contract;
 
@@ -31,13 +31,26 @@ describe("Token", () => {
 
     [owner, receipientA, receipientB] = await ethers.getSigners();
 
+    await network.provider.send("hardhat_setBalance", [
+      owner.address,
+      "0x487A9A304539440000",
+    ]);
+    await network.provider.send("hardhat_setBalance", [
+      receipientA.address,
+      "0x487A9A304539440000",
+    ]);
+    await network.provider.send("hardhat_setBalance", [
+      receipientB.address,
+      "0x487A9A304539440000",
+    ]);
+
     token = await (await ethers.getContractFactory("DEGENX")).deploy();
     await token.deployed();
 
-    busd = await (
+    asset = await (
       await ethers.getContractFactory("ERC20_Token_Sample")
     ).deploy();
-    await busd.deployed();
+    await asset.deployed();
   });
 
   describe("Defaults", () => {
@@ -53,12 +66,12 @@ describe("Token", () => {
     beforeEach(async () => {
       controller = await (
         await ethers.getContractFactory("DGNXController")
-      ).deploy(token.address, busd.address);
+      ).deploy(token.address, asset.address);
       await controller.deployed();
 
       updatedController = await (
         await ethers.getContractFactory("DGNXController")
-      ).deploy(token.address, busd.address);
+      ).deploy(token.address, asset.address);
       await updatedController.deployed();
 
       await (await controller.connect(owner).addFactory(dexFactoryA)).wait();
@@ -73,6 +86,39 @@ describe("Token", () => {
         await token.connect(owner).updateController(controller.address)
       ).wait();
       expect(await token.controller()).to.equal(controller.address);
+    });
+
+    it("should be set controller and be tradeable with penalty", async () => {
+      await (
+        await token.connect(owner).updateController(controller.address)
+      ).wait();
+      await (
+        await token.connect(owner).transfer(receipientA.address, tokens(100000))
+      ).wait();
+      expect(await token.balanceOf(receipientA.address)).to.eq(tokens(100000));
+      await (
+        await token
+          .connect(receipientA)
+          .transfer(receipientB.address, tokens(100000))
+      ).wait();
+      expect(await token.balanceOf(receipientB.address)).to.eq(tokens(1000));
+    });
+
+    it("should be set controller and be tradeable without penalty", async () => {
+      await (
+        await token.connect(owner).updateController(controller.address)
+      ).wait();
+      await (await controller.connect(owner).disableBotProtection()).wait();
+      await (
+        await token.connect(owner).transfer(receipientA.address, tokens(100000))
+      ).wait();
+      expect(await token.balanceOf(receipientA.address)).to.eq(tokens(100000));
+      await (
+        await token
+          .connect(receipientA)
+          .transfer(receipientB.address, tokens(100000))
+      ).wait();
+      expect(await token.balanceOf(receipientB.address)).to.eq(tokens(100000));
     });
 
     it("should be updated multiple times", async () => {

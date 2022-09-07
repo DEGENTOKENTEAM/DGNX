@@ -15,9 +15,7 @@ async function main() {
   ).deploy(tokenAddress);
   await locker.deployed();
 
-  const lockerAddress = locker.address;
-
-  console.log("DGNXLocker deployed to: ", lockerAddress);
+  console.log("DGNXLocker deployed to: ", locker.address);
   console.log("Current balance: ", (await deployer.getBalance()).toString());
 }
 
