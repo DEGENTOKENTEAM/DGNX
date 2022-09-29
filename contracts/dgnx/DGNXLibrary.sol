@@ -2,8 +2,8 @@
 pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
-import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+import './../interfaces/IFactory.sol';
+import './../interfaces/IPair.sol';
 
 library DGNXLibrary {
     using SafeMath for uint256;
@@ -28,8 +28,8 @@ library DGNXLibrary {
         address tokenB
     ) internal view returns (uint256 reserveA, uint256 reserveB) {
         (address token0, ) = sortTokens(tokenA, tokenB);
-        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(
-            IUniswapV2Factory(factory).getPair(tokenA, tokenB)
+        (uint256 reserve0, uint256 reserve1, ) = IPair(
+            IFactory(factory).getPair(tokenA, tokenB)
         ).getReserves();
         (reserveA, reserveB) = tokenA == token0
             ? (reserve0, reserve1)

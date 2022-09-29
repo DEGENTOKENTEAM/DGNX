@@ -22,6 +22,7 @@ const abiFactoryTJOE = require("../release-process/abi-tjoe-factory.json");
 const abiRouterTJOE = require("../release-process/abi-tjoe-router.json");
 const abiFactoryPANGO = require("../release-process/abi-pango-factory.json");
 const abiRouterPANGO = require("../release-process/abi-pango-router.json");
+const abiWavax = require("../release-process/abi-wavax.json");
 
 const addressToken = "0x51e48670098173025C477D9AA3f0efF7BF9f7812";
 const addressLocker = "0x2c7D8bB6aBA4FFf56cDDBF9ea47ed270A10098F7";
@@ -47,6 +48,7 @@ export const contracts = async () => {
   const [owner] = await ethers.getSigners();
   return {
     token: new ethers.Contract(addressToken, abiToken, owner),
+    wavax: new ethers.Contract(addresses.WAVAX, abiWavax, owner),
     locker: new ethers.Contract(addressLocker, abiLocker, owner),
     nft: new ethers.Contract(addressNFT, abiNFT, owner),
     sale: new ethers.Contract(addressSale, abiSale, owner),
@@ -61,12 +63,8 @@ export const contracts = async () => {
       abiFactoryPANGO,
       owner
     ),
-    pairTJOE: !!addressPairTJOE
-      ? new ethers.Contract(addressPairTJOE, abis.abiPairTJOE, owner)
-      : null,
-    pairPANGO: !!addressPairPANGO
-      ? new ethers.Contract(addressPairPANGO, abis.abiPairPANGO, owner)
-      : null,
+    pairTJOE: new ethers.Contract(addressPairTJOE, abis.abiPairTJOE, owner),
+    pairPANGO: new ethers.Contract(addressPairPANGO, abis.abiPairPANGO, owner),
   };
 };
 
