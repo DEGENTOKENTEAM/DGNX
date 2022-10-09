@@ -5,6 +5,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 import './../interfaces/IDGNXController.sol';
+import './../interfaces/IDGNXDisburser.sol';
 import './../interfaces/IFactory.sol';
 import './../interfaces/IPair.sol';
 import './../interfaces/IERC20.sol';
@@ -39,6 +40,9 @@ contract DGNXControllerV2 is IDGNXController, ReentrancyGuard, Ownable {
         0xcA01A9d36F47561F03226B6b697B14B9274b1B10;
     address public constant INVESTMENT_FUND =
         0x829619513F202e1bFD8929f656EF96bac73BDAe8;
+    address public constant DISBURSER =
+        0x8a0E3264Da08bf999AfF5a50AabF5d2dc89fab79;
+    address public constant LOCKER = 0x2c7D8bB6aBA4FFf56cDDBF9ea47ed270A10098F7;
 
     // needs to be set
     address public previousController;
@@ -149,6 +153,20 @@ contract DGNXControllerV2 is IDGNXController, ReentrancyGuard, Ownable {
 
         bool isSell = isPair(to);
         bool isBuy = isPair(from);
+
+        // Disburser Wallet Transfer Tax
+        if (
+            (isDisburserWallet(from) || isDisburserWallet(to)) &&
+            !isSell &&
+            !isBuy &&
+            to != DISBURSER &&
+            from != DISBURSER
+        ) {
+            uint256 leftover = amount % 10000;
+            uint256 tax = (((amount - leftover) * 250) / 10000) + leftover;
+            safeTransfer(dgnx, LOCKER, tax);
+            return amount - tax;
+        }
 
         if (
             isAllowed(from) ||
@@ -287,6 +305,19 @@ contract DGNXControllerV2 is IDGNXController, ReentrancyGuard, Ownable {
 
         bool isSell = isPair(to);
         bool isBuy = isPair(from);
+
+        // Disburser Wallet Transfer Tax
+        if (
+            (isDisburserWallet(from) || isDisburserWallet(to)) &&
+            !isSell &&
+            !isBuy &&
+            to != DISBURSER &&
+            from != DISBURSER
+        ) {
+            uint256 leftover = amount % 10000;
+            uint256 tax = (((amount - leftover) * 250) / 10000) + leftover;
+            return (amount - tax, 0, 0, 0, 0, 0, 0);
+        }
 
         if (
             isAllowed(from) ||
@@ -670,6 +701,10 @@ contract DGNXControllerV2 is IDGNXController, ReentrancyGuard, Ownable {
 
     function isAllowed(address addr) public view returns (bool) {
         return allowedContracts[addr];
+    }
+
+    function isDisburserWallet(address addr) private view returns (bool) {
+        return IDGNXDisburser(DISBURSER).legacyAmounts(addr) > 0;
     }
 
     function setMainPair(address pair) public onlyOwner {

@@ -11,7 +11,9 @@ dotenv.config();
 describe("Controller", () => {
   let owner: SignerWithAddress,
     addr1: SignerWithAddress,
-    addr2: SignerWithAddress;
+    addr2: SignerWithAddress,
+    addr3: SignerWithAddress,
+    addr4: SignerWithAddress;
   let token: Contract,
     wavax: Contract,
     locker: Contract,
@@ -34,7 +36,7 @@ describe("Controller", () => {
       },
     ]);
 
-    [owner, addr1, addr2] = await ethers.getSigners();
+    [owner, addr1, addr2, addr3, addr4] = await ethers.getSigners();
 
     await network.provider.send("hardhat_setBalance", [
       owner.address,
@@ -43,6 +45,16 @@ describe("Controller", () => {
 
     await network.provider.send("hardhat_setBalance", [
       addr1.address,
+      "0x487A9A304539440000",
+    ]);
+
+    await network.provider.send("hardhat_setBalance", [
+      addr2.address,
+      "0x487A9A304539440000",
+    ]);
+
+    await network.provider.send("hardhat_setBalance", [
+      addr3.address,
       "0x487A9A304539440000",
     ]);
 
@@ -652,6 +664,50 @@ describe("Controller", () => {
       expect(marketing).to.eq(parseEther("0"));
       expect(platform).to.eq(parseEther("0"));
       expect(investment).to.eq(parseEther("0"));
+    });
+  });
+
+  describe.only("Disburser Taxation", () => {
+    it("should be applied", async () => {
+      await (await token.updateController(controller.address)).wait();
+
+      const { disburser } = await contracts();
+      await (
+        await disburser.addAddresses(
+          [addr1.address, addr2.address],
+          [parseEther("100000"), parseEther("100000")]
+        )
+      ).wait();
+
+      await (await disburser.connect(addr1).claimStart()).wait();
+      await (await disburser.connect(addr2).claimStart()).wait();
+
+      expect(await token.balanceOf(addr1.address)).to.eq(parseEther("10000"));
+      expect(await token.balanceOf(addr2.address)).to.eq(parseEther("10000"));
+
+      await (
+        await token.connect(addr2).transfer(addr1.address, parseEther("10000"))
+      ).wait();
+
+      expect(await token.balanceOf(addr1.address)).to.eq(parseEther("19750"));
+
+      await (
+        await token.connect(addr1).transfer(addr3.address, parseEther("19750"))
+      ).wait();
+
+      expect(await token.balanceOf(addr3.address)).to.eq(
+        BigNumber.from("19256250000000000000000")
+      );
+
+      await (
+        await token
+          .connect(addr3)
+          .transfer(addr4.address, BigNumber.from("19256250000000000000000"))
+      ).wait();
+
+      expect(await token.balanceOf(addr4.address)).to.eq(
+        BigNumber.from("19256250000000000000000")
+      );
     });
   });
 
