@@ -155,15 +155,9 @@ contract DGNXControllerV2 is IDGNXController, ReentrancyGuard, Ownable {
         bool isBuy = isPair(from);
 
         // Disburser Wallet Transfer Tax
-        if (
-            (isDisburserWallet(from) || isDisburserWallet(to)) &&
-            !isSell &&
-            !isBuy &&
-            to != DISBURSER &&
-            from != DISBURSER
-        ) {
+        if (isDisburserWallet(to) && !isSell && !isBuy && from != DISBURSER) {
             uint256 leftover = amount % 10000;
-            uint256 tax = (((amount - leftover) * 250) / 10000) + leftover;
+            uint256 tax = (((amount - leftover) * 500) / 10000) + leftover;
             safeTransfer(dgnx, LOCKER, tax);
             return amount - tax;
         }
@@ -307,15 +301,9 @@ contract DGNXControllerV2 is IDGNXController, ReentrancyGuard, Ownable {
         bool isBuy = isPair(from);
 
         // Disburser Wallet Transfer Tax
-        if (
-            (isDisburserWallet(from) || isDisburserWallet(to)) &&
-            !isSell &&
-            !isBuy &&
-            to != DISBURSER &&
-            from != DISBURSER
-        ) {
+        if (isDisburserWallet(to) && !isSell && !isBuy && from != DISBURSER) {
             uint256 leftover = amount % 10000;
-            uint256 tax = (((amount - leftover) * 250) / 10000) + leftover;
+            uint256 tax = (((amount - leftover) * 500) / 10000) + leftover;
             return (amount - tax, 0, 0, 0, 0, 0, 0);
         }
 

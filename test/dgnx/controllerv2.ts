@@ -667,7 +667,7 @@ describe("Controller", () => {
     });
   });
 
-  describe.only("Disburser Taxation", () => {
+  describe("Disburser Taxation", () => {
     it("should be applied", async () => {
       await (await token.updateController(controller.address)).wait();
 
@@ -689,25 +689,19 @@ describe("Controller", () => {
         await token.connect(addr2).transfer(addr1.address, parseEther("10000"))
       ).wait();
 
-      expect(await token.balanceOf(addr1.address)).to.eq(parseEther("19750"));
+      expect(await token.balanceOf(addr1.address)).to.eq(parseEther("19500"));
 
       await (
-        await token.connect(addr1).transfer(addr3.address, parseEther("19750"))
+        await token.connect(addr1).transfer(addr3.address, parseEther("19500"))
       ).wait();
 
-      expect(await token.balanceOf(addr3.address)).to.eq(
-        BigNumber.from("19256250000000000000000")
-      );
+      expect(await token.balanceOf(addr3.address)).to.eq(parseEther("19500"));
 
       await (
-        await token
-          .connect(addr3)
-          .transfer(addr4.address, BigNumber.from("19256250000000000000000"))
+        await token.connect(addr3).transfer(addr4.address, parseEther("19500"))
       ).wait();
 
-      expect(await token.balanceOf(addr4.address)).to.eq(
-        BigNumber.from("19256250000000000000000")
-      );
+      expect(await token.balanceOf(addr4.address)).to.eq(parseEther("19500"));
     });
   });
 
