@@ -79,15 +79,15 @@ const config: HardhatUserConfig = {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
       accounts: [`0x${process.env.PRIVATE_KEY_DEPLOYER_TESTNET}`],
     },
-    mainnet: {
-      chainId: 43114,
-      gasPrice: 225000000000,
-      url: "https://api.avax.network/ext/bc/C/rpc",
-      // accounts: [`0x${process.env.PRIVATE_KEY_DEPLOYER_MAINNET}`],
-      accounts: {
-        mnemonic: `${process.env.PRIVATE_KEY_DEPLOYER_MAINNET_MNEMONIC}`,
-      },
-    },
+    // mainnet: {
+    //   chainId: 43114,
+    //   gasPrice: 225000000000,
+    //   url: "https://api.avax.network/ext/bc/C/rpc",
+    //   // accounts: [`0x${process.env.PRIVATE_KEY_DEPLOYER_MAINNET}`],
+    //   accounts: {
+    //     mnemonic: `${process.env.PRIVATE_KEY_DEPLOYER_MAINNET_MNEMONIC}`,
+    //   },
+    // },
     localfork: {
       url: "http://127.0.0.1:8545",
       chainId: parseInt(process.env.CHAIN_ID || ""),
@@ -122,7 +122,7 @@ const config: HardhatUserConfig = {
     },
   },
   paths: {
-    sources: "./contracts/dgnx",
+    sources: "./contracts",
   },
 };
 
