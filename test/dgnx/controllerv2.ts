@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import * as dotenv from "dotenv";
 import { BigNumber, Contract } from "ethers";
 import { formatEther, parseEther } from "ethers/lib/utils";
-import { addresses, contracts } from "../../scripts/dgnx/helpers";
+import { addresses, contracts } from "../../scripts/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 dotenv.config();
 

@@ -2,11 +2,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { Contract } from "ethers";
 import { ethers } from "hardhat";
-import { contracts } from "./../../scripts/dgnx/helpers";
+import { contracts } from "../../scripts/helpers";
 
 import * as dotenv from "dotenv";
 import { parseEther } from "ethers/lib/utils";
-import { addresses } from "../../scripts/dgnx/helpers/index";
+import { addresses } from "../../scripts/helpers/index";
 dotenv.config();
 
 describe("Token", () => {

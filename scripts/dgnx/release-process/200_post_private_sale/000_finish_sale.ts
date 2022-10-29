@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
 
-import { contracts } from "../../helpers";
+import { contracts } from "../../../helpers";
 import { parseEther } from "ethers/lib/utils";
 
 dotenv.config();
