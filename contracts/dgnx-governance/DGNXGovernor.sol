@@ -19,12 +19,12 @@ contract DGNXGovernor is
     constructor(IVotes _token, TimelockController _timelock)
         Governor('DGNXGovernor')
         GovernorSettings(
-            10, /* 10 block */
-            45818, /* 1 week */
-            0
+            82200, /* 2 days */
+            288000, /* 1 week */
+            10000 * 10**18 /* 10000 DGNX */
         )
         GovernorVotes(_token)
-        GovernorVotesQuorumFraction(4)
+        GovernorVotesQuorumFraction(5)
         GovernorTimelockControl(_timelock)
     {}
 

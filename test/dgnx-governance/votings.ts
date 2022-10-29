@@ -1,18 +1,27 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { Contract, ContractReceipt } from "ethers";
-import { ethers, network } from "hardhat";
-import { tokens } from "../helpers";
 import * as dotenv from "dotenv";
+import { BigNumber, Contract, ContractReceipt } from "ethers";
+import { parseEther } from "ethers/lib/utils";
+import { ethers, network } from "hardhat";
+import { contracts } from "../../scripts/helpers";
 dotenv.config();
 
 describe("Governor", () => {
   const description = "Proposal #1: Update Controller to V1";
-  const minDelayTimelock = 60 * 60 * 24 * 7; // 1 week
-  let updateControllerCall: string;
+  const minDelayTimelock = 60 * 60 * 24 * 2; // 1 week
+  let updateControllerCall: string,
+    lockerWithdrawCall: string,
+    controllerSetBurnTaxCall: string;
   let token: Contract,
-    busd: Contract,
+    wavax: Contract,
+    locker: Contract,
+    ftjoe: Contract,
+    ptjoe: Contract,
+    fpango: Contract,
+    ppango: Contract,
     controller: Contract,
+    controllerNew: Contract,
     timelockController: Contract,
     governor: Contract;
   let owner: SignerWithAddress,
@@ -23,48 +32,75 @@ describe("Governor", () => {
     holderE: SignerWithAddress;
 
   beforeEach(async () => {
-    await ethers.provider.send("hardhat_reset", [
-      {
-        forking: {
-          jsonRpcUrl: process.env.NODE_URL,
-          blockNumber: parseInt(process.env.NODE_BLOCK || ""),
-        },
-      },
-    ]);
+    // await ethers.provider.send("hardhat_reset", [
+    //   {
+    //     forking: {
+    //       jsonRpcUrl: process.env.NODE_URL,
+    //       blockNumber: parseInt(process.env.NODE_BLOCK || ""),
+    //     },
+    //   },
+    // ]);
     [owner, holderA, holderB, holderC, holderD, holderE] =
       await ethers.getSigners();
 
-    token = await (await ethers.getContractFactory("DEGENX")).deploy();
-    await token.deployed();
+    // await network.provider.send("hardhat_setBalance", [
+    //   owner.address,
+    //   "0x487A9A304539440000",
+    // ]);
+    await network.provider.send("hardhat_setBalance", [
+      holderA.address,
+      "0x487A9A304539440000",
+    ]);
+    await network.provider.send("hardhat_setBalance", [
+      holderB.address,
+      "0x487A9A304539440000",
+    ]);
+    await network.provider.send("hardhat_setBalance", [
+      holderC.address,
+      "0x487A9A304539440000",
+    ]);
+    await network.provider.send("hardhat_setBalance", [
+      holderD.address,
+      "0x487A9A304539440000",
+    ]);
+    await network.provider.send("hardhat_setBalance", [
+      holderE.address,
+      "0x487A9A304539440000",
+    ]);
 
-    busd = await (
-      await ethers.getContractFactory("ERC20_Token_Sample")
-    ).deploy();
-    await busd.deployed();
+    ({
+      token,
+      wavax,
+      locker,
+      controller,
+      timelockController,
+      governor,
+      factoryTJOE: ftjoe,
+      factoryPANGO: fpango,
+      pairTJOE: ptjoe,
+      pairPANGO: ppango,
+    } = await contracts());
 
-    controller = await (
-      await ethers.getContractFactory("DGNXController")
-    ).deploy(token.address, busd.address);
-    await controller.deployed();
+    // timelockController = await (
+    //   await ethers.getContractFactory("DGNXTimelockController")
+    // ).deploy(minDelayTimelock, [], [ethers.constants.AddressZero]);
+    // await timelockController.deployed();
 
-    timelockController = await (
-      await ethers.getContractFactory("DGNXTimelockController")
+    // governor = await (
+    //   await ethers.getContractFactory("DGNXGovernor")
+    // ).deploy(token.address, timelockController.address);
+    // await governor.deployed();
+
+    controllerNew = await (
+      await ethers.getContractFactory("DGNXControllerV2")
     ).deploy(
-      60 * 60 * 24 * 7,
-      [ethers.constants.AddressZero],
-      [ethers.constants.AddressZero]
+      token.address,
+      wavax.address,
+      [ftjoe.address, fpango.address],
+      [ptjoe.address, ppango.address],
+      ptjoe.address
     );
-    await timelockController.deployed();
-
-    governor = await (
-      await ethers.getContractFactory("DGNXGovernor")
-    ).deploy(token.address, timelockController.address);
-    await governor.deployed();
-
-    await (await token.transferOwnership(timelockController.address)).wait();
-    await (
-      await controller.transferOwnership(timelockController.address)
-    ).wait();
+    await controllerNew.deployed();
 
     // grant role to govener contract
     const PROPOSER_ROLE = await timelockController.PROPOSER_ROLE();
@@ -87,11 +123,22 @@ describe("Governor", () => {
         .grantRole(EXECUTOR_ROLE, governor.address)
     ).wait();
 
-    await (await token.transfer(holderA.address, tokens(100000))).wait();
-    await (await token.transfer(holderB.address, tokens(200000))).wait();
-    await (await token.transfer(holderC.address, tokens(400000))).wait();
-    await (await token.transfer(holderD.address, tokens(800000))).wait();
-    await (await token.transfer(holderE.address, tokens(1600000))).wait();
+    await (await locker.withdraw(owner.address, parseEther("10000"), 0)).wait();
+    await (
+      await locker.withdraw(holderA.address, parseEther("100000"), 0)
+    ).wait();
+    await (
+      await locker.withdraw(holderB.address, parseEther("200000"), 0)
+    ).wait();
+    await (
+      await locker.withdraw(holderC.address, parseEther("400000"), 0)
+    ).wait();
+    await (
+      await locker.withdraw(holderD.address, parseEther("800000"), 0)
+    ).wait();
+    await (
+      await locker.withdraw(holderE.address, parseEther("1600000"), 0)
+    ).wait();
 
     await (await token.connect(owner).delegate(owner.address)).wait();
     await (await token.connect(holderA).delegate(holderA.address)).wait();
@@ -102,8 +149,22 @@ describe("Governor", () => {
 
     updateControllerCall = token.interface.encodeFunctionData(
       "updateController",
-      [controller.address]
+      [controllerNew.address]
     );
+    lockerWithdrawCall = locker.interface.encodeFunctionData("withdraw", [
+      owner.address,
+      parseEther("1337"),
+      0,
+    ]);
+    controllerSetBurnTaxCall = controllerNew.interface.encodeFunctionData(
+      "setBurnTax",
+      [499]
+    );
+
+    await (await token.transferOwnership(timelockController.address)).wait(); // prettier-ignore
+    await (await controller.transferOwnership(timelockController.address)).wait(); // prettier-ignore
+    await (await controllerNew.transferOwnership(timelockController.address)).wait(); // prettier-ignore
+    await (await locker.transferOwnership(timelockController.address)).wait(); // prettier-ignore
   });
 
   it("should be able to create a proposal", async () => {
@@ -128,10 +189,11 @@ describe("Governor", () => {
     ).wait();
 
     const proposalId = proposalReceipt?.events![0].args![0];
+    console.log(proposalId, proposalReceipt?.events![0].args);
     expect(proposalId).to.not.be.empty;
     expect(await governor.state(proposalId)).to.equal(0);
 
-    await moveBlocks(11);
+    await moveBlocks(82201);
 
     expect(await governor.state(proposalId)).to.equal(1);
 
@@ -143,6 +205,8 @@ describe("Governor", () => {
 
     expect(await governor.state(proposalId)).to.equal(1);
     const proposalData = await governor.proposals(proposalId);
+
+    console.log(proposalData);
 
     expect(proposalData["forVotes"]).to.equal(
       ethers.BigNumber.from("1600000000000000000000000")
@@ -169,7 +233,7 @@ describe("Governor", () => {
     expect(proposalId).to.not.be.empty;
     expect(await governor.state(proposalId)).to.equal(0);
 
-    await moveBlocks(11);
+    await moveBlocks(82201);
 
     expect(await governor.state(proposalId)).to.equal(1);
 
@@ -181,7 +245,7 @@ describe("Governor", () => {
 
     expect(await governor.state(proposalId)).to.equal(1);
 
-    await moveBlocks(45819);
+    await moveBlocks(288000);
 
     expect(await governor.state(proposalId)).to.equal(4);
 
@@ -192,9 +256,7 @@ describe("Governor", () => {
 
     expect(await governor.state(proposalId)).to.equal(5);
 
-    expect(await token.connect(holderA).controller()).to.equal(
-      ethers.constants.AddressZero
-    );
+    expect(await token.controller()).to.equal(controller.address);
 
     // execute proposal
     await expect(
@@ -208,7 +270,94 @@ describe("Governor", () => {
     ).wait();
 
     expect(await token.connect(holderA).controller()).to.equal(
-      controller.address
+      controllerNew.address
+    );
+  });
+
+  it("should be able to queue and execute a proposal with multiple executions", async () => {
+    const proposalReceipt: ContractReceipt = await (
+      await governor["propose(address[],uint256[],bytes[],string)"](
+        [token.address, locker.address, controllerNew.address],
+        [0, 0, 0],
+        [updateControllerCall, lockerWithdrawCall, controllerSetBurnTaxCall],
+        description
+      )
+    ).wait();
+
+    const proposalId = proposalReceipt?.events![0].args![0];
+    expect(proposalId).to.not.be.empty;
+    expect(await governor.state(proposalId)).to.equal(0);
+
+    await moveBlocks(82201);
+
+    expect(await governor.state(proposalId)).to.equal(1);
+
+    await (await governor.connect(holderA).castVote(proposalId, 0)).wait();
+    await (await governor.connect(holderB).castVote(proposalId, 0)).wait();
+    await (await governor.connect(holderC).castVote(proposalId, 0)).wait();
+    await (await governor.connect(holderD).castVote(proposalId, 2)).wait();
+    await (await governor.connect(holderE).castVote(proposalId, 1)).wait();
+
+    expect(await governor.state(proposalId)).to.equal(1);
+
+    await moveBlocks(288001);
+
+    expect(await governor.state(proposalId)).to.equal(4);
+
+    // queue proposal
+    await (
+      await governor.connect(holderA)["queue(uint256)"](proposalId)
+    ).wait();
+
+    expect(await governor.state(proposalId)).to.equal(5);
+
+    expect(await token.controller()).to.equal(controller.address);
+
+    // execute proposal
+    await expect(
+      governor.connect(holderA)["execute(uint256)"](proposalId)
+    ).to.be.revertedWith("TimelockController: operation is not ready");
+
+    await moveTime(minDelayTimelock + 1);
+
+    const lockerBalanceBefore: BigNumber = await token.balanceOf(
+      locker.address
+    );
+    const ownerBalanceBefore: BigNumber = await token.balanceOf(owner.address);
+
+    await (
+      await governor.connect(holderA)["execute(uint256)"](proposalId)
+    ).wait();
+
+    expect(await token.controller()).to.equal(controllerNew.address);
+    expect(await controllerNew.burnTax()).to.equal(499);
+    expect(await token.balanceOf(owner.address)).to.equal(
+      ownerBalanceBefore.add(parseEther("1337"))
+    );
+    expect(await token.balanceOf(locker.address)).to.equal(
+      lockerBalanceBefore.sub(parseEther("1337"))
+    );
+  });
+
+  it("no one else can execute actions", async () => {
+    const transferOwnership = token.interface.encodeFunctionData(
+      "transferOwnership",
+      [holderA.address]
+    );
+
+    await expect(
+      timelockController
+        .connect(holderA)
+        .schedule(
+          token.address,
+          0,
+          transferOwnership,
+          ethers.utils.formatBytes32String(""),
+          ethers.utils.formatBytes32String("iek"),
+          minDelayTimelock
+        )
+    ).to.be.revertedWith(
+      `AccessControl: account ${holderA.address.toLowerCase()} is missing role ${await timelockController.PROPOSER_ROLE()}`
     );
   });
 });

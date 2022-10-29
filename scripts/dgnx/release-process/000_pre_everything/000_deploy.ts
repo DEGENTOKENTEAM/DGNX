@@ -3,7 +3,7 @@ import { formatUnits, parseEther } from "ethers/lib/utils";
 import * as fs from "fs";
 import { ethers } from "hardhat";
 
-import { addresses } from "../../helpers";
+import { addresses } from "../../../helpers";
 
 dotenv.config();
 

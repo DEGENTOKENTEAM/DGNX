@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import * as dotenv from "dotenv";
-import { contracts } from "../../helpers";
+import { contracts } from "../../../helpers";
 dotenv.config();
 
 async function main() {
