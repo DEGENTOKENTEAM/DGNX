@@ -34,10 +34,4 @@ interface IDGNXController {
     function removeContract(address addr) external;
 
     function recoverToken(address token, address to) external;
-
-    function isAllowed(address addr) external view returns (bool);
-
-    function feeOff() external;
-
-    function feeOn() external;
 }
