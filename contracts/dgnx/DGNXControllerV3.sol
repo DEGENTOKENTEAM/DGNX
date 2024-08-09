@@ -14,11 +14,6 @@ import { IFeeGenericFacet } from "./../interfaces/IFeeGenericFacet.sol";
 import { IFeeDistributorFacet, FeeConfigSyncHomeDTO, FeeConfigSyncHomeFees } from "./../interfaces/IFeeDistributorFacet.sol";
 import { LibControllerStorage } from "./libraries/LibControllerStorage.sol";
 
-import "hardhat/console.sol";
-
-// TODO Update Fees on Fee Distributor && set DENOMINATOR_RELATIVE to 10 ** 4 to use real bps and remove the absolute calculation. It should return the defo set value, becaus it'll be WEI
-// TODO FEE_DISTRIBUTOR_PUSH_ROLE for DGNX Controller V3
-// TODO SYNC Fees
 /// @title DGNX Controller V3
 /// @author Daniel <danieldegendev@gmail.com>
 /// @notice This version of the controller now participates in the new fee distribution of the DEGENX Ecosystem
@@ -72,6 +67,12 @@ contract DGNXControllerV3 is IDGNXController {
         _;
     }
 
+    /// Initializes the protocol
+    /// @param _buyFees array of bytes32
+    /// @param _sellFees array of bytes32
+    /// @param _lps array of LP addresses
+    /// @param _excludes array of addresses that should be excluded from the beginning
+    /// @param _owner address of the owner (deployer)
     function initialize(
         bytes32[] calldata _buyFees,
         bytes32[] calldata _sellFees,
@@ -101,40 +102,53 @@ contract DGNXControllerV3 is IDGNXController {
     }
 
     // viewables
+
+    /// Returns the previous controller address
     function previousController() external view returns (address _previousController) {
         _previousController = LibControllerStorage.store().previousController;
     }
 
+    /// Checks whether a given account is excluded from fee charges or not
+    /// @param _account address of a contract or eoa
     function isExcluded(address _account) external view returns (bool _is) {
         _is = LibControllerStorage.store().excludes[_account];
     }
 
+    /// Checks if the contract is initialized
     function isInitialized() external view returns (bool _is) {
         _is = LibControllerStorage.store().initialized;
     }
 
+    /// Returns all buy fee ids
     function getBuyFees() external view returns (bytes32[] memory _fees) {
         _fees = LibControllerStorage.store().buyFees;
     }
 
+    /// Returns all sell fee ids
     function getSellFees() external view returns (bytes32[] memory _fees) {
         _fees = LibControllerStorage.store().sellFees;
     }
 
+    /// Returns all unique fee ids
     function getAllUsedFees() external view returns (bytes32[] memory _fees) {
         _fees = LibControllerStorage.store().allFees;
     }
 
+    /// Returns the total fee amount that has been charged
+    /// @dev this is a temporary data. It will be set to zero when the fees got pushed to the distributor
     function getTotalFees() external view returns (uint256 _totalFees) {
         _totalFees = LibControllerStorage.store().totalFees;
     }
 
+    /// Checks whether a given address is a configured LP
+    /// @param _lp address of a contract
     function isLP(address _lp) external view returns (bool _is) {
         _is = LibControllerStorage.store().lps[_lp];
     }
 
     // executables
 
+    /// @inheritdoc IDGNXController
     function transferFees(address _from, address _to, uint256 _amount) external returns (uint256 _newAmount) {
         if (msg.sender != TOKEN) revert NotAllowed(); // only allowed to call by by token
         if (_amount == 0) revert ZeroValueNotAllowed();
@@ -178,6 +192,7 @@ contract DGNXControllerV3 is IDGNXController {
         inTransfer = false;
     }
 
+    /// @inheritdoc IDGNXController
     function estimateTransferFees(
         address from,
         address to,
@@ -214,7 +229,7 @@ contract DGNXControllerV3 is IDGNXController {
 
     /* istanbul ignore next */ function migrate() external {}
 
-    // this is called by the token to initiate the migration from the new controller
+    /// @inheritdoc IDGNXController
     function migration(address _previousController) external {
         if (msg.sender != TOKEN) revert NotAllowed();
 
@@ -235,6 +250,10 @@ contract DGNXControllerV3 is IDGNXController {
     }
 
     /// administrative
+
+    /// Batch Updates all fees that should be applied on trades
+    /// @param _buyFees array of bytes32 fee ids
+    /// @param _sellFees array of bytes32 fee id
     function updateFeeIds(bytes32[] calldata _buyFees, bytes32[] calldata _sellFees) external onlyOwner {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
 
@@ -247,6 +266,9 @@ contract DGNXControllerV3 is IDGNXController {
         emit UpdatedFeeIds();
     }
 
+    /// Enables and disables an LP
+    /// @param _lp contract address of a pair
+    /// @param _enable flag if the lp should be enabled or not
     function enableLP(address _lp, bool _enable) external onlyOwner {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         _s.lps[_lp] = _enable;
@@ -254,7 +276,9 @@ contract DGNXControllerV3 is IDGNXController {
         else emit RemoveLP(_lp);
     }
 
-    // @todo access control
+    /// Excludes and includes an address for getting charged with fees
+    /// @param _account address of an account
+    /// @param _exclude flag if the account should be excluded or not
     function excludeAccount(address _account, bool _exclude) external onlyOwner {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         _s.excludes[_account] = _exclude;
@@ -262,6 +286,7 @@ contract DGNXControllerV3 is IDGNXController {
         else emit IncludeAccount(_account);
     }
 
+    /// @inheritdoc IDGNXController
     function recoverToken(address _token, address _to) external onlyOwner {
         if (_token == TOKEN) revert NotAllowed();
         uint256 _balance = IERC20(_token).balanceOf(address(this));
@@ -275,6 +300,11 @@ contract DGNXControllerV3 is IDGNXController {
 
     /// internals
 
+    /// Charges a fee based on a given fee id and the base amount
+    /// @param _feeId bytes32 fee id
+    /// @param _amount base amount for fee calculation
+    /// @return _amountAfterFee the new amount after the fee has been charged
+    /// @return _fee the charged fee amount
     function _chargeFees(bytes32 _feeId, uint256 _amount) internal returns (uint256 _amountAfterFee, uint256 _fee) {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         _fee = (_amount * IFeeGenericFacet(DISTRIBUTOR).feeGenericGetFee(_feeId)) / 10 ** 4;
@@ -283,6 +313,8 @@ contract DGNXControllerV3 is IDGNXController {
         _s.fees[_feeId] += _fee;
     }
 
+    /// Push the fee to the fee distributor
+    /// @dev this is being done only on sells
     function _pushFees() internal {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         uint256 _pushableFees = 0;
@@ -316,6 +348,9 @@ contract DGNXControllerV3 is IDGNXController {
         IFeeDistributorFacet(DISTRIBUTOR).pushFees(TOKEN, _dto.totalFees, _dto);
     }
 
+    /// Batch updating the fees
+    /// @param _buyFees array of bytes32 fee ids
+    /// @param _sellFees array of bytes32 fee ids
     function _updateFeeIds(bytes32[] calldata _buyFees, bytes32[] calldata _sellFees) internal {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         for (uint256 i = 0; i < _buyFees.length; i++) {
@@ -330,10 +365,13 @@ contract DGNXControllerV3 is IDGNXController {
         }
     }
 
+    /// checks for the owner
     function _onlyOwner() internal view {
         if (msg.sender != LibControllerStorage.store().owner) revert NotAllowed();
     }
 
+    /// checks whether an account has still legacy amounts in the disburser
+    /// @param _account account to check
     function _isDisburserWallet(address _account) internal view returns (bool _is) {
         _is = IDGNXDisburser(DISBURSER).legacyAmounts(_account) > 0;
     }
