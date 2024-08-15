@@ -145,7 +145,7 @@ const config: HardhatUserConfig = {
     deployer: 0,
   },
   typechain: {
-    alwaysGenerateOverloads: true
+    alwaysGenerateOverloads: true,
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -159,6 +159,13 @@ const config: HardhatUserConfig = {
     apiKey: {
       avalanche: process.env.APIKEY_SNOWSCAN || '',
     },
+    customChains: [
+      {
+        chainId: 43114,
+        network: 'avalanche',
+        urls: { apiURL: 'https://api.snowscan.xyz/api', browserURL: 'https://snowscan.xyz' },
+      },
+    ],
   },
   paths: {
     sources: './contracts',
