@@ -8,7 +8,6 @@ import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/ac
 
 import { IDGNXController } from "./../interfaces/IDGNXController.sol";
 import { IDGNXDisburser } from "./../interfaces/IDGNXDisburser.sol";
-import { IRouter } from "./../interfaces/IRouter.sol";
 import { IFeeGenericFacet } from "./../interfaces/IFeeGenericFacet.sol";
 import { IFeeDistributorFacet, FeeConfigSyncHomeDTO, FeeConfigSyncHomeFees } from "./../interfaces/IFeeDistributorFacet.sol";
 import { LibControllerStorage } from "./../dgnx/libraries/LibControllerStorage.sol";
@@ -230,12 +229,6 @@ contract DGNXControllerV3 is IDGNXController, AccessControlUpgradeable {
             uint256 _investmentFundAmount
         )
     {
-        _liquidityAmount;
-        _backingAmount;
-        _burnAmount;
-        _marketingAmount;
-        _platformAmount;
-        _investmentFundAmount;
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         bool _isExcluded = _s.excludes[from] || _s.excludes[to];
         bool _isBuy = _s.lps[from];

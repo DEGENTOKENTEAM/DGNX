@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.26;
 
 
 // https://github.com/DEGENTOKENTEAM/diamond/blob/78970ec746f4bc5ab3d53f1d39b7aeb406885e37/contracts/diamond/helpers/Structs.sol#L117
