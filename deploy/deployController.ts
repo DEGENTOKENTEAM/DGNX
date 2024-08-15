@@ -1,3 +1,4 @@
+import { ZeroAddress } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
@@ -10,7 +11,14 @@ const func: DeployFunction = async ({ getNamedAccounts, deployments, ecosystem }
   await deploy('DGNXControllerV3', {
     log: true,
     from: deployer,
-    args: [contracts.token, contracts.locker, contracts.wrapper, contracts.disburser, contracts.distributor],
+    args: [
+      contracts.timelockController,
+      contracts.token,
+      contracts.locker,
+      contracts.wrapper,
+      contracts.disburser,
+      contracts.distributor,
+    ],
     proxy: {
       proxyContract: 'OptimizedTransparentProxy',
       execute: {

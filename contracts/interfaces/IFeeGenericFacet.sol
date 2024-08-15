@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.19;
-
-// TODO add repo reference, so you know where to look up the interface
+pragma solidity ^0.8.26;
 
 /// @title Fee Generic Facet Interface
 /// @author Daniel <danieldegendev@gmail.com>
+/// @notice Source: https://github.com/DEGENTOKENTEAM/diamond/blob/78970ec746f4bc5ab3d53f1d39b7aeb406885e37/contracts/diamond/interfaces/IFeeGenericFacet.sol
 interface IFeeGenericFacet {
     event Distributed(address indexed account, uint256 amount);
     event Collected(bytes32 indexed feeId, uint256 amount);

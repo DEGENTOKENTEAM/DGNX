@@ -16,7 +16,6 @@ import {
 import { deployFixtures } from '../utils/fixtures';
 
 describe('DGNX Controller V3', function () {
-  let timelock$: DGNXTimelockController;
   let controller$: DGNXControllerV3;
   let disburser$: LegacyDisburserMock;
   let distributor$: DistributorMock;
@@ -45,7 +44,7 @@ describe('DGNX Controller V3', function () {
     });
 
     ({ buyFees, sellFees } = fixtures);
-    ({ token$, timelock$, controller$, previousController$, wrapper$, distributor$, disburser$ } = fixtures.contracts);
+    ({ token$, controller$, previousController$, wrapper$, distributor$, disburser$ } = fixtures.contracts);
     ({ pangoLPWAVAX, tjoeLPWAVAX, previousController, locker, marketing, platform } = fixtures.contractAddresses);
     ({ deployer, signer0, signer1, signer2, developmentSigner } = fixtures.accounts);
     [feeA, feeB, feeC, feeD] = fixtures.buyFees;
@@ -64,26 +63,20 @@ describe('DGNX Controller V3', function () {
       expect(await controller$.getBuyFees()).to.have.length(4);
       expect(await controller$.getSellFees()).to.have.length(4);
       expect(await controller$.getAllUsedFees()).to.have.length(4);
+      expect(await controller$.getInitializedVersion()).to.eq(1);
       expect(await controller$.isLP(pangoLPWAVAX)).to.be.true;
       expect(await controller$.isLP(tjoeLPWAVAX)).to.be.true;
 
-      await expect(controller$.connect(signer0).initialize([], [], [], [], ZeroAddress)).to.be.revertedWithCustomError(
-        controller$,
-        'NotAllowed'
-      );
-
-      await expect(controller$.initialize([], [], [], [], ZeroAddress)).to.be.revertedWithCustomError(
-        controller$,
-        'AlreadyInitialized'
+      await expect(controller$.connect(signer0).initialize([], [], [], [], ZeroAddress)).to.be.revertedWith(
+        'Initializable: contract is already initialized'
       );
     });
   });
 
   describe('Fee Management', function () {
     it('should be able to remove all fees in one batch', async function () {
-      await expect(controller$.connect(signer0).updateFeeIds([], [])).to.be.revertedWithCustomError(
-        controller$,
-        'NotAllowed'
+      await expect(controller$.connect(signer0).updateFeeIds([], [])).to.be.revertedWith(
+        `AccessControl: account ${signer0.address.toLowerCase()} is missing role 0xf206625bad3d9112d5609b8d356e6fbd514cd1f69980d4ce2b3e6e68e1789ace`
       );
       await expect(controller$.updateFeeIds([], [])).to.emit(controller$, 'UpdatedFeeIds');
       expect(await controller$.getBuyFees()).to.have.length(0);

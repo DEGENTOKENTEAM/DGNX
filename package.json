@@ -2,7 +2,9 @@
   "name": "hardhat-project",
   "scripts": {
     "test": "USE_REAL_ACCOUNTS=false npx hardhat test",
+    "test:latest-controller": "USE_REAL_ACCOUNTS=false npx hardhat test ./test/controllerv3.spec.ts",
     "deploy": "USE_REAL_ACCOUNTS=true LOCALFORK_RPC_NETWORK=mainnet-avax USE_LOCALFORK_INSTEAD=true npx hardhat --network mainnet-avax deploy",
+    "deploy:mainnet": "USE_REAL_ACCOUNTS=true LOCALFORK_RPC_NETWORK=mainnet-avax USE_LOCALFORK_INSTEAD=false npx hardhat --network mainnet-avax deploy",
     "coverage": "USE_REAL_ACCOUNTS=false npx hardhat coverage",
     "show-coverage": "npx http-server ./coverage/"
   },
@@ -14,8 +16,8 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomicfoundation/hardhat-verify": "^1.1.0",
-    "@openzeppelin/contracts": "~4.6.0",
-    "@openzeppelin/contracts-upgradeable": "^4.8.2",
+    "@openzeppelin/contracts": "4.9.6",
+    "@openzeppelin/contracts-upgradeable": "4.9.6",
     "@openzeppelin/hardhat-upgrades": "^2.1.1",
     "@openzeppelin/test-helpers": "^0.5.16",
     "@solidstate/contracts": "^0.0.56",

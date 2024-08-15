@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.17;
 
-// TODO add repo reference, so you know where to look up the interface
 
+// https://github.com/DEGENTOKENTEAM/diamond/blob/78970ec746f4bc5ab3d53f1d39b7aeb406885e37/contracts/diamond/helpers/Structs.sol#L117
 struct FeeConfigSyncHomeFees {
     bytes32 id;
     uint256 amount;
 }
 
+// https://github.com/DEGENTOKENTEAM/diamond/blob/78970ec746f4bc5ab3d53f1d39b7aeb406885e37/contracts/diamond/helpers/Structs.sol#L123
 struct FeeConfigSyncHomeDTO {
     uint256 totalFees;
     address bountyReceiver;
     FeeConfigSyncHomeFees[] fees;
 }
 
-// TODO add repo reference, so you know where to look up the interface
-
 /// @title Fee Distributor Interface
 /// @author Daniel <danieldegendev@gmail.com>
+/// @notice source: https://github.com/DEGENTOKENTEAM/diamond/blob/78970ec746f4bc5ab3d53f1d39b7aeb406885e37/contracts/diamond/interfaces/IFeeDistributorFacet.sol
 interface IFeeDistributorFacet {
     // this is guarateed to get the tokens before being executed
 

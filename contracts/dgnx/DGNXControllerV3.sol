@@ -1,25 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./../interfaces/IDGNXController.sol";
-import "./../interfaces/IDGNXDisburser.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
+import { IDGNXController } from "./../interfaces/IDGNXController.sol";
+import { IDGNXDisburser } from "./../interfaces/IDGNXDisburser.sol";
 import { IRouter } from "./../interfaces/IRouter.sol";
 import { IFeeGenericFacet } from "./../interfaces/IFeeGenericFacet.sol";
 import { IFeeDistributorFacet, FeeConfigSyncHomeDTO, FeeConfigSyncHomeFees } from "./../interfaces/IFeeDistributorFacet.sol";
-import { LibControllerStorage } from "./libraries/LibControllerStorage.sol";
+import { LibControllerStorage } from "./../dgnx/libraries/LibControllerStorage.sol";
 
 /// @title DGNX Controller V3
 /// @author Daniel <danieldegendev@gmail.com>
 /// @notice This version of the controller now participates in the new fee distribution of the DEGENX Ecosystem
-contract DGNXControllerV3 is IDGNXController {
+contract DGNXControllerV3 is IDGNXController, AccessControlUpgradeable {
     using Address for address;
     using SafeERC20 for IERC20;
+
+    bytes32 public constant ROLE_OWNER = keccak256("ROLE_OWNER");
+    bytes32 public constant ROLE_ADMIN = keccak256("ROLE_ADMIN");
+    bytes32 public constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
 
     address public immutable DISTRIBUTOR;
     address public immutable DISBURSER;
@@ -27,6 +30,7 @@ contract DGNXControllerV3 is IDGNXController {
     address public immutable WRAPPER;
     address public immutable LOCKER;
     address public immutable TOKEN;
+    address public immutable DAO;
 
     bool inTransfer = false;
 
@@ -39,7 +43,7 @@ contract DGNXControllerV3 is IDGNXController {
     event MigratingController(address migrator);
     event RecoverToken(address token, uint256 amount);
     event UpdatedFeeIds();
-    event Initialized();
+    event ControllerInitialized();
 
     error AlreadyInitialized();
     error NotAllowed();
@@ -47,24 +51,21 @@ contract DGNXControllerV3 is IDGNXController {
     error MissingFeeIds();
 
     constructor(
+        address _dao, // timelock controller
         address _token, // dgnx token address
         address _locker, // 0x2c7D8bB6aBA4FFf56cDDBF9ea47ed270A10098F7
         address _wrapper, // wavax token address
         address _disburser, // 0x8a0E3264Da08bf999AfF5a50AabF5d2dc89fab79
         address _distributor // diamond address
     ) {
+        DAO = _dao;
         TOKEN = _token;
         LOCKER = _locker;
         WRAPPER = _wrapper;
         DISBURSER = _disburser;
         DISTRIBUTOR = _distributor;
 
-        DEPLOYER = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        _onlyOwner();
-        _;
+        DEPLOYER = _msgSender();
     }
 
     /// Initializes the protocol
@@ -79,13 +80,11 @@ contract DGNXControllerV3 is IDGNXController {
         address[] calldata _lps,
         address[] calldata _excludes,
         address _owner
-    ) external {
-        if (msg.sender != DEPLOYER) revert NotAllowed();
+    ) external initializer {
+        if (_msgSender() != DEPLOYER) revert NotAllowed();
+        if (_owner == address(0)) revert NotAllowed();
 
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
-        if (_s.initialized) revert AlreadyInitialized();
-
-        _s.initialized = true;
 
         _s.owner = _owner;
         _s.excludes[LOCKER] = true;
@@ -98,7 +97,24 @@ contract DGNXControllerV3 is IDGNXController {
 
         _updateFeeIds(_buyFees, _sellFees);
 
-        emit Initialized();
+        // oz upgradeable contracts initializing
+        __ERC165_init();
+        __Context_init();
+        __AccessControl_init();
+
+        // set default roles
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _setRoleAdmin(ROLE_OWNER, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(ROLE_ADMIN, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(ROLE_MANAGER, DEFAULT_ADMIN_ROLE);
+        _grantRole(ROLE_OWNER, _owner);
+        _grantRole(ROLE_ADMIN, _owner);
+        _grantRole(ROLE_MANAGER, _owner);
+
+        // DAO address available?
+        if (DAO != address(0)) _grantRole(ROLE_MANAGER, DAO);
+
+        emit ControllerInitialized();
     }
 
     // viewables
@@ -116,7 +132,12 @@ contract DGNXControllerV3 is IDGNXController {
 
     /// Checks if the contract is initialized
     function isInitialized() external view returns (bool _is) {
-        _is = LibControllerStorage.store().initialized;
+        _is = _getInitializedVersion() > 0;
+    }
+
+    /// Returns the current initialized version
+    function getInitializedVersion() external view returns (uint8 _version) {
+        _version = _getInitializedVersion();
     }
 
     /// Returns all buy fee ids
@@ -150,7 +171,7 @@ contract DGNXControllerV3 is IDGNXController {
 
     /// @inheritdoc IDGNXController
     function transferFees(address _from, address _to, uint256 _amount) external returns (uint256 _newAmount) {
-        if (msg.sender != TOKEN) revert NotAllowed(); // only allowed to call by by token
+        if (_msgSender() != TOKEN) revert NotAllowed(); // only allowed to call by by token
         if (_amount == 0) revert ZeroValueNotAllowed();
 
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
@@ -169,7 +190,6 @@ contract DGNXControllerV3 is IDGNXController {
         bool _chargeBuyFees = _isBuy && _s.buyFees.length > 0;
         bool _chargeSellFees = _isSell && _s.sellFees.length > 0;
 
-        // TODO test inTransfer when doing nested transfers, normally pushFees should recogniyze this
         if (_isExcluded || (!_chargeBuyFees && !_chargeSellFees) || inTransfer) return _amount;
 
         inTransfer = true;
@@ -231,7 +251,7 @@ contract DGNXControllerV3 is IDGNXController {
 
     /// @inheritdoc IDGNXController
     function migration(address _previousController) external {
-        if (msg.sender != TOKEN) revert NotAllowed();
+        if (_msgSender() != TOKEN) revert NotAllowed();
 
         if (_previousController == address(this) || _previousController == address(0)) revert NotAllowed();
 
@@ -254,7 +274,7 @@ contract DGNXControllerV3 is IDGNXController {
     /// Batch Updates all fees that should be applied on trades
     /// @param _buyFees array of bytes32 fee ids
     /// @param _sellFees array of bytes32 fee id
-    function updateFeeIds(bytes32[] calldata _buyFees, bytes32[] calldata _sellFees) external onlyOwner {
+    function updateFeeIds(bytes32[] calldata _buyFees, bytes32[] calldata _sellFees) external onlyRole(ROLE_MANAGER) {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
 
         delete _s.buyFees;
@@ -269,7 +289,7 @@ contract DGNXControllerV3 is IDGNXController {
     /// Enables and disables an LP
     /// @param _lp contract address of a pair
     /// @param _enable flag if the lp should be enabled or not
-    function enableLP(address _lp, bool _enable) external onlyOwner {
+    function enableLP(address _lp, bool _enable) external onlyRole(ROLE_MANAGER) {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         _s.lps[_lp] = _enable;
         if (_enable) emit AddLP(_lp);
@@ -279,7 +299,7 @@ contract DGNXControllerV3 is IDGNXController {
     /// Excludes and includes an address for getting charged with fees
     /// @param _account address of an account
     /// @param _exclude flag if the account should be excluded or not
-    function excludeAccount(address _account, bool _exclude) external onlyOwner {
+    function excludeAccount(address _account, bool _exclude) external onlyRole(ROLE_MANAGER) {
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         _s.excludes[_account] = _exclude;
         if (_s.excludes[_account]) emit ExcludeAccount(_account);
@@ -287,7 +307,7 @@ contract DGNXControllerV3 is IDGNXController {
     }
 
     /// @inheritdoc IDGNXController
-    function recoverToken(address _token, address _to) external onlyOwner {
+    function recoverToken(address _token, address _to) external onlyRole(ROLE_MANAGER) {
         if (_token == TOKEN) revert NotAllowed();
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(_to, _balance);
@@ -363,11 +383,6 @@ contract DGNXControllerV3 is IDGNXController {
             for (uint256 j = 0; j < _s.allFees.length; j++) if (_s.allFees[j] == _sellFees[i]) _exists = true;
             if (!_exists) _s.allFees.push(_sellFees[i]);
         }
-    }
-
-    /// checks for the owner
-    function _onlyOwner() internal view {
-        if (msg.sender != LibControllerStorage.store().owner) revert NotAllowed();
     }
 
     /// checks whether an account has still legacy amounts in the disburser

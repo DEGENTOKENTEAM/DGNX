@@ -14,7 +14,6 @@ export const deployFixtures = deployments.createFixture(
     const token$ = await ethers.getContractAt('DEGENXMock', protocols.contracts.token);
     const wrapper$ = await ethers.getContractAt('ERC20Mock', protocols.contracts.wrapper);
     const disburser$ = await ethers.getContractAt('LegacyDisburserMock', protocols.contracts.disburser);
-    const timelock$ = await ethers.getContractAt('DGNXTimelockController', protocols.contracts.timelockController);
     const controller$ = (await ethers.getContract('DGNXControllerV3')) as DGNXControllerV3;
     const distributor$ = await ethers.getContractAt('DistributorMock', protocols.contracts.distributor);
     const previousController$ = (await ethers.getContract('DGNXControllerMock')) as DGNXControllerMock;
@@ -38,7 +37,6 @@ export const deployFixtures = deployments.createFixture(
       contracts: {
         token$,
         wrapper$,
-        timelock$,
         disburser$,
         controller$,
         distributor$,

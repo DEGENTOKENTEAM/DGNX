@@ -56,7 +56,16 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: '0.8.19',
+        version: '0.8.20',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: '0.8.26',
         settings: {
           optimizer: {
             enabled: true,
@@ -136,7 +145,7 @@ const config: HardhatUserConfig = {
     deployer: 0,
   },
   typechain: {
-    alwaysGenerateOverloads: true,
+    alwaysGenerateOverloads: true
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,

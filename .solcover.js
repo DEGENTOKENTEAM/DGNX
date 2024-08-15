@@ -1,5 +1,5 @@
 module.exports = {
-  modifierWhitelist: ['onlyOwner'],
+  modifierWhitelist: ['onlyRole'],
   skipFiles: [
     '__mocks__',
     'dgnx-governance',
