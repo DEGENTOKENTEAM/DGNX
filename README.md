@@ -49,5 +49,5 @@ For faster runs of your tests and scripts, consider skipping ts-node's type chec
 
 ```
   docker run -it -v $(pwd):/share --workdir="/share/contracts" trailofbits/eth-security-toolbox
-  slither ./dgnx --solc-remaps "@openzeppelin/=/share/node_modules/@openzeppelin/ @uniswap/=/share/node_modules/@uniswap/"
+  slither ./dgnx --solc-remaps "@openzeppelin/=/share/node_modules/@openzeppelin/"
 ``` 
