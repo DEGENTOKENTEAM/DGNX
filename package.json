@@ -3,6 +3,8 @@
   "scripts": {
     "test": "USE_REAL_ACCOUNTS=false npx hardhat test",
     "test:latest-controller": "USE_REAL_ACCOUNTS=false npx hardhat test ./test/controllerv3.spec.ts",
+    "deploy:latest-controller": "USE_LOCALFORK_INSTEAD=false USE_REAL_ACCOUNTS=true npx hardhat deploy --network mainnet-avax --tags DeployController",
+    "deploy:latest-controller:locally": "USE_LOCALFORK_INSTEAD=true USE_REAL_ACCOUNTS=true npx hardhat deploy --network mainnet-avax --tags DeployController",
     "deploy": "USE_REAL_ACCOUNTS=true LOCALFORK_RPC_NETWORK=mainnet-avax USE_LOCALFORK_INSTEAD=true npx hardhat --network mainnet-avax deploy",
     "deploy:mainnet": "USE_REAL_ACCOUNTS=true LOCALFORK_RPC_NETWORK=mainnet-avax USE_LOCALFORK_INSTEAD=false npx hardhat --network mainnet-avax deploy",
     "coverage": "USE_REAL_ACCOUNTS=false npx hardhat coverage",

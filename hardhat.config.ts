@@ -157,7 +157,7 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      avalanche: process.env.SNOWTRACE_API_KEY_MAINNET || '',
+      avalanche: process.env.APIKEY_SNOWSCAN || '',
     },
   },
   paths: {

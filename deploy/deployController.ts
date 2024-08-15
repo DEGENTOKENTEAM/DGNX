@@ -1,14 +1,15 @@
-import { ZeroAddress } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { verifyContract } from '../scripts/verifier';
 
-const func: DeployFunction = async ({ getNamedAccounts, deployments, ecosystem }: HardhatRuntimeEnvironment) => {
+const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+  const { getNamedAccounts, deployments, ecosystem } = hre;
   const { deploy, log } = deployments;
   const { deployer } = await getNamedAccounts();
   log(`🚀 Start deploying ControllerV3`);
   const config = await ecosystem.getConfig();
   const { contracts } = await ecosystem.getProtocols();
-  await deploy('DGNXControllerV3', {
+  const { address } = await deploy('DGNXControllerV3', {
     log: true,
     from: deployer,
     args: [
@@ -20,6 +21,7 @@ const func: DeployFunction = async ({ getNamedAccounts, deployments, ecosystem }
       contracts.distributor,
     ],
     proxy: {
+      owner: deployer,
       proxyContract: 'OptimizedTransparentProxy',
       execute: {
         init: {
@@ -29,6 +31,19 @@ const func: DeployFunction = async ({ getNamedAccounts, deployments, ecosystem }
       },
     },
   });
+
+  await verifyContract(hre, 'DGNXControllerV3', {
+    address,
+    args: [
+      contracts.timelockController,
+      contracts.token,
+      contracts.locker,
+      contracts.wrapper,
+      contracts.disburser,
+      contracts.distributor,
+    ],
+  });
+
   log(`✅ Finish deploying ControllerV3`);
 };
 
