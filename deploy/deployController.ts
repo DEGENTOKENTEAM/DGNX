@@ -32,17 +32,19 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     },
   });
 
-  await verifyContract(hre, 'DGNXControllerV3', {
-    address,
-    args: [
-      contracts.timelockController,
-      contracts.token,
-      contracts.locker,
-      contracts.wrapper,
-      contracts.disburser,
-      contracts.distributor,
-    ],
-  });
+  if (process.env.USE_LOCALFORK_INSTEAD !== 'true') {
+    await verifyContract(hre, 'DGNXControllerV3', {
+      address,
+      args: [
+        contracts.timelockController,
+        contracts.token,
+        contracts.locker,
+        contracts.wrapper,
+        contracts.disburser,
+        contracts.distributor,
+      ],
+    });
+  }
 
   log(`✅ Finish deploying ControllerV3`);
 };

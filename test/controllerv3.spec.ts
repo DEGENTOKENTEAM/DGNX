@@ -4,7 +4,6 @@ import { impersonateAccount, setBalance, stopImpersonatingAccount } from '@nomic
 import { expect } from 'chai';
 import { keccak256, parseEther, toUtf8Bytes, ZeroAddress } from 'ethers';
 import { ethers, network } from 'hardhat';
-import { DGNXTimelockController } from '../typechain';
 import {
   DEGENXMock,
   DGNXControllerMock,
@@ -561,6 +560,33 @@ describe('DGNX Controller V3', function () {
         [await controller$.getAddress(), deployer.address],
         [parseEther('-10'), parseEther('10')]
       );
+    });
+  });
+
+  describe('Blacklist', function () {
+    it('should not be able to make a transfer when on blacklist', async function () {
+      await token$.updateController(await controller$.getAddress());
+      await token$.mint(signer1.address, parseEther('1'));
+      await token$.mint(signer2.address, parseEther('1'));
+
+      await expect(controller$.blacklistAccount(signer1.address, true))
+        .to.emit(controller$, 'BlacklistAccount')
+        .withArgs(signer1.address);
+
+      await expect(token$.connect(signer1).transfer(signer0.address, parseEther('1'))).to.be.revertedWithCustomError(
+        controller$,
+        'NotAllowed'
+      );
+
+      await expect(
+        token$.connect(signer2).transfer(signer0.address, parseEther('1'))
+      ).to.not.be.revertedWithCustomError(controller$, 'NotAllowed');
+
+      await controller$.blacklistAccount(signer1.address, false);
+
+      await expect(
+        token$.connect(signer1).transfer(signer0.address, parseEther('1'))
+      ).to.not.be.revertedWithCustomError(controller$, 'NotAllowed');
     });
   });
 });

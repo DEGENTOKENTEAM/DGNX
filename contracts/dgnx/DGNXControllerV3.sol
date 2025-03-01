@@ -11,6 +11,7 @@ import { IDGNXDisburser } from "./../interfaces/IDGNXDisburser.sol";
 import { IFeeGenericFacet } from "./../interfaces/IFeeGenericFacet.sol";
 import { IFeeDistributorFacet, FeeConfigSyncHomeDTO, FeeConfigSyncHomeFees } from "./../interfaces/IFeeDistributorFacet.sol";
 import { LibControllerStorage } from "./../dgnx/libraries/LibControllerStorage.sol";
+import { LibBlacklistStorage } from "./../dgnx/libraries/LibBlacklistStorage.sol";
 
 /// @title DGNX Controller V3
 /// @author Daniel <danieldegendev@gmail.com>
@@ -37,6 +38,8 @@ contract DGNXControllerV3 is IDGNXController, AccessControlUpgradeable {
     event RemoveContractForMigration(address sender, address target);
     event ExcludeAccount(address account);
     event IncludeAccount(address account);
+    event BlacklistAccount(address account);
+    event RevokeBlacklistAccount(address account);
     event AddLP(address lp);
     event RemoveLP(address lp);
     event MigratingController(address migrator);
@@ -229,6 +232,9 @@ contract DGNXControllerV3 is IDGNXController, AccessControlUpgradeable {
             uint256 _investmentFundAmount
         )
     {
+        // blacklist check
+        if (LibBlacklistStorage.store().accounts[from] || LibBlacklistStorage.store().accounts[to]) revert NotAllowed();
+
         LibControllerStorage.Storage storage _s = LibControllerStorage.store();
         bool _isExcluded = _s.excludes[from] || _s.excludes[to];
         bool _isBuy = _s.lps[from];
@@ -297,6 +303,16 @@ contract DGNXControllerV3 is IDGNXController, AccessControlUpgradeable {
         _s.excludes[_account] = _exclude;
         if (_s.excludes[_account]) emit ExcludeAccount(_account);
         else emit IncludeAccount(_account);
+    }
+
+    /// Blacklists an account for being able to operate
+    /// @param _account address of an account
+    /// @param _blacklist flag if the account should be blacklisted or not
+    function blacklistAccount(address _account, bool _blacklist) external onlyRole(ROLE_MANAGER) {
+        LibBlacklistStorage.Storage storage _bs = LibBlacklistStorage.store();
+        _bs.accounts[_account] = _blacklist;
+        if (_bs.accounts[_account]) emit BlacklistAccount(_account);
+        else emit RevokeBlacklistAccount(_account);
     }
 
     /// @inheritdoc IDGNXController
