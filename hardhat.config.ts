@@ -1,32 +1,53 @@
-import * as dotenv from "dotenv";
+import '@nomicfoundation/hardhat-chai-matchers';
+import '@nomicfoundation/hardhat-ethers';
+import '@nomicfoundation/hardhat-toolbox';
+import '@nomicfoundation/hardhat-verify';
+import * as dotenv from 'dotenv';
+import { expand as dotenvExpand } from 'dotenv-expand';
+import 'hardhat-deploy';
+import 'hardhat-deploy-ethers';
+import { HardhatUserConfig } from 'hardhat/config';
+import 'solidity-docgen';
+import './config';
+import { NETWORK_HARDHAT, NETWORK_MAINNET_AVAX } from './utils/networks';
+require('@openzeppelin/hardhat-upgrades');
+require('hardhat-contract-sizer');
+require('solidity-coverage');
 
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomiclabs/hardhat-etherscan";
-import "@nomiclabs/hardhat-waffle";
-import "@typechain/hardhat";
-import "hardhat-gas-reporter";
-import "solidity-coverage";
+dotenvExpand(dotenv.config());
 
-dotenv.config();
+const accounts =
+  process.env.USE_REAL_ACCOUNTS === 'true'
+    ? {
+        mnemonic: `${process.env.PRIVATE_KEY_DEPLOYER_MAINNET_MNEMONIC}`,
+      }
+    : undefined;
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
+const accountsHardhat =
+  process.env.USE_REAL_ACCOUNTS === 'true'
+    ? [{ privateKey: `${process.env.PRIVATE_KEY_DEPLOYER_MAINNET}`, balance: (1337n * 10n ** 18n).toString() }]
+    : undefined;
 
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
+const localforkAVAX = {
+  chainId: parseInt(`${process.env.LOCALFORK_CHAIN_ID_AVAX}`),
+  block: parseInt(`${process.env.LOCALFORK_BLOCK_AVAX}`),
+  url: `${process.env.LOCALFORK_RPC_AVAX}`,
+};
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+const localforkRPCs: { [network: string]: { block: number; url: string; chainId: number } } = {
+  [NETWORK_MAINNET_AVAX]: { ...localforkAVAX },
+};
+
+localforkRPCs[NETWORK_HARDHAT] = localforkRPCs[`${process.env.LOCALFORK_RPC_NETWORK}`];
+
+const useLocalforkInstead = process.env.USE_LOCALFORK_INSTEAD !== 'false';
+const localforkUrl = 'http://127.0.0.1:8545';
 
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.13",
+        version: '0.8.13',
         settings: {
           optimizer: {
             enabled: true,
@@ -35,7 +56,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: "0.6.6",
+        version: '0.8.20',
         settings: {
           optimizer: {
             enabled: true,
@@ -44,7 +65,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: "0.6.2",
+        version: '0.8.26',
         settings: {
           optimizer: {
             enabled: true,
@@ -53,7 +74,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: "0.5.16",
+        version: '0.6.6',
         settings: {
           optimizer: {
             enabled: true,
@@ -62,7 +83,25 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        version: "0.8.9",
+        version: '0.6.2',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: '0.5.16',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: '0.8.9',
         settings: {
           optimizer: {
             enabled: true,
@@ -73,56 +112,63 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
-    testnet: {
+    'testnet-avax': {
+      live: !useLocalforkInstead,
       chainId: 43113,
-      gasPrice: 225000000000,
-      url: "https://api.avax-test.network/ext/bc/C/rpc",
-      accounts: [`0x${process.env.PRIVATE_KEY_DEPLOYER_TESTNET}`],
+      url: useLocalforkInstead ? localforkUrl : 'https://api.avax-test.network/ext/bc/C/rpc',
+      accounts,
     },
-    // mainnet: {
-    //   chainId: 43114,
-    //   gasPrice: 225000000000,
-    //   url: "https://api.avax.network/ext/bc/C/rpc",
-    //   // accounts: [`0x${process.env.PRIVATE_KEY_DEPLOYER_MAINNET}`],
-    //   accounts: {
-    //     mnemonic: `${process.env.PRIVATE_KEY_DEPLOYER_MAINNET_MNEMONIC}`,
-    //   },
-    // },
+    'mainnet-avax': {
+      live: !useLocalforkInstead,
+      chainId: 43114,
+      url: useLocalforkInstead ? localforkUrl : 'https://api.avax.network/ext/bc/C/rpc',
+      accounts,
+    },
     localfork: {
-      url: "http://127.0.0.1:8545",
-      chainId: parseInt(process.env.CHAIN_ID || ""),
-      gasPrice: 225000000000,
-      // accounts: [`0x${process.env.PRIVATE_KEY_DEPLOYER_TESTNET}`],
-      accounts: {
-        mnemonic: `${process.env.PRIVATE_KEY_DEPLOYER_MAINNET_MNEMONIC}`,
-      },
+      live: false,
+      url: localforkUrl,
+      accounts,
     },
     hardhat: {
-      chainId: parseInt(process.env.CHAIN_ID || ""),
-      gasPrice: 225000000000,
-      accounts: {
-        count: 20,
-      },
+      live: false,
+      saveDeployments: false,
+      chainId: localforkRPCs[`${process.env.LOCALFORK_RPC_NETWORK}`].chainId,
+      accounts: accountsHardhat,
       forking: {
         enabled: true,
-        url: process.env.NODE_URL || "",
-        blockNumber: parseInt(process.env.NODE_BLOCK || ""),
+        url: localforkRPCs[`${process.env.LOCALFORK_RPC_NETWORK}`].url,
+        blockNumber: localforkRPCs[`${process.env.LOCALFORK_RPC_NETWORK}`].block,
       },
     },
+  },
+  namedAccounts: {
+    deployer: 0,
+  },
+  typechain: {
+    alwaysGenerateOverloads: true,
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+    currency: 'USD',
+  },
+  docgen: {
+    pages: 'files',
+    exclude: ['__mocks__'],
   },
   etherscan: {
     apiKey: {
-      bscTestnet: process.env.ETHERSCAN_API_KEY,
-      avalanche: process.env.SNOWTRACE_API_KEY_MAINNET,
-      avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY,
+      avalanche: process.env.APIKEY_SNOWSCAN || '',
     },
+    customChains: [
+      {
+        chainId: 43114,
+        network: 'avalanche',
+        urls: { apiURL: 'https://api.snowscan.xyz/api', browserURL: 'https://snowscan.xyz' },
+      },
+    ],
   },
   paths: {
-    sources: "./contracts",
+    sources: './contracts',
   },
 };
 
